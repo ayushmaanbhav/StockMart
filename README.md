@@ -1,43 +1,68 @@
-StockMart
-=========
+# StockMart - Real-time Virtual Stock Exchange
 
-A java based Virtual Stock Exchange Game (VSE)<br>
-Want to know more about Stock Markets? Here: https://www.youtube.com/watch?v=F3QpgXBtDeo
+StockMart is a high-performance, real-time virtual stock exchange application built with **Rust** (Backend) and **React** (Frontend). It features a matching engine, live market data, portfolio management, global chat, and a leaderboard.
 
-<h2>Description:</h2>
-I developed the application in two parts, a client applet which interacts with a server application via TCP. The features of the client applet include live ranking, chat discussion, news items, company stocks and their market values, the status of share market and sensex. The features of the admin application (server) include live view of the users, their details, stocks and money, set news items, set time limit, block chat, delete user, view rankings, chat discussion and edit stock prices.
+## 🚀 Tech Stack
 
-<h2>Features and Improvements (Branch: real-bid):</h2>
-Introduced real bidding whereas the code in the master branch operates on Monte Carlo simulation and there is no real bidding. Introduced many new features like bid graphs and order queue graphs !!! Fixed many bugs.... Developed a matching engine for matching orders or bids..... Improved code structure....
+### Backend
+- **Rust**: Core language for performance and safety.
+- **Axum**: High-performance web framework.
+- **Tokio**: Asynchronous runtime.
+- **DashMap**: Concurrent in-memory data storage.
+- **Serde**: Serialization/Deserialization.
+- **Tower-HTTP**: CORS and middleware.
 
-<h2>Guidelines</h2>
-<h3>Server</h3>
-* money.txt: specify user's initial money. user will get that money and some random shares of the same value.<br>
-* companies.txt: specify the companies and their initial share value just after their name, separated by a ":", ignore rest of the values. eg:<br>
-"Reliance:260"<br>
-(one company per line)<br>
-* reg.txt: if only user with allotted regnos are to be able to play then specify the registration nos in this file, (only small chars and numbers), you can disable the regno. checking by clicking on the button "CheckREG" on the main screen.<br>
-* Start server by double clicking it, set the time limit, wait for the users to connect, finally start the server by clicking the start button...<br>
-* You can add spice to the game by using the text area below to show news to the users. "ONE NEWS ITEM PER LINE". News about companies to fluctuate the prices. :) Eg. of a positive news:<br>
-"Microsoft announces Windows 10. This new version will thrill the users."<br>
-* You can view users in the user panel, increase their money, give them bonus, increase their chat, change their pass, ban and delete them, view their stocks and orders... etc<br>
-* You can view the pending orders in the order queue and manually cancel them if necessary or u face any problem.
+### Frontend
+- **React**: UI library.
+- **Vite**: Build tool.
+- **TypeScript**: Type safety.
+- **Zustand**: State management.
+- **TailwindCSS**: Styling.
+- **Lightweight Charts**: Financial charting.
+- **Lucide React**: Icons.
 
-<h3>Client:</h3>
-* Start client by cmd prompt or terminal by giving ip of the server as the first argument eg:<br>
-"java -jar StockMartClient.jar -localhost"<br>
-* Register (each field is restricted to use only small chars and nos.), login and start playing.
+## ✨ Features
 
-<h2>Screenshots:</h2>
-<h3>Server:</h3>
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806859/49115ab2-d271-11e4-825e-41dfd4e2e7f8.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806858/48f789b6-d271-11e4-97ab-c82c5c968cba.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806861/4943f0a8-d271-11e4-8420-e7d70787b33d.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806860/491cf318-d271-11e4-8838-d64e31166f01.PNG">
+- **Real-time Trading**: Buy, Sell, and Short orders with a matching engine.
+- **Live Market Data**: Real-time candlestick charts and order book updates via WebSocket.
+- **Portfolio Management**: Track cash, holdings, and net worth in real-time.
+- **Global Chat**: Real-time chat with other traders.
+- **Leaderboard**: Live rankings based on total net worth.
+- **Market News**: Simulated market news feed affecting sentiment.
+- **Circuit Breakers**: Automatic trading halts for extreme volatility.
+- **Persistence**: Auto-save/load of user and company data.
 
-<h3>Client:</h3>
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806856/486c49fa-d271-11e4-8a67-67826f90efe5.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806853/485f95e8-d271-11e4-95fb-c4f9beb67c29.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806854/48645f4c-d271-11e4-9c73-1d42545a5c93.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806855/486b8c9a-d271-11e4-94a5-20b15fef0a76.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806857/48c4131a-d271-11e4-8a39-da2d3f5a904d.PNG">
+## 🛠️ Setup & Running
+
+### Prerequisites
+- **Rust** (latest stable)
+- **Node.js** (v18+)
+
+### Backend
+1. Navigate to the backend directory:
+   ```bash
+   cd rust_stockmart/backend
+   ```
+2. Run the server:
+   ```bash
+   RUST_LOG=info cargo run
+   ```
+   The backend will start on `http://localhost:3000`.
+
+### Frontend
+1. Navigate to the frontend directory:
+   ```bash
+   cd rust_stockmart/frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will be available at `http://localhost:5173`.
+
+## 📝 License
+MIT
