@@ -1,0 +1,255 @@
+[
+  {
+    "id": 2,
+    "regno": "123",
+    "name": "123",
+    "password_hash": "1234",
+    "money": 530000000,
+    "locked_money": 0,
+    "margin_locked": 0,
+    "chat_enabled": true,
+    "banned": false,
+    "created_at": 1765285633,
+    "portfolio": [
+      {
+        "user_id": 2,
+        "symbol": "INFY",
+        "qty": 43,
+        "short_qty": 0,
+        "locked_qty": 43,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "ADANIENT",
+        "qty": 46,
+        "short_qty": 0,
+        "locked_qty": 46,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "RELIANCE",
+        "qty": 56,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "HDFCBANK",
+        "qty": 54,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "TATAMOTORS",
+        "qty": 44,
+        "short_qty": 0,
+        "locked_qty": 44,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "ZOMATO",
+        "qty": 51,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "TCS",
+        "qty": 45,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "SUNPHARMA",
+        "qty": 51,
+        "short_qty": 0,
+        "locked_qty": 51,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "PAYTM",
+        "qty": 40,
+        "short_qty": 0,
+        "locked_qty": 40,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 2,
+        "symbol": "ICICIBANK",
+        "qty": 40,
+        "short_qty": 0,
+        "locked_qty": 40,
+        "average_buy_price": 1000000
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "regno": "trader4",
+    "name": "Trader Four",
+    "password_hash": "password123",
+    "money": 980000000,
+    "locked_money": 0,
+    "margin_locked": 0,
+    "chat_enabled": true,
+    "banned": false,
+    "created_at": 1765276676,
+    "portfolio": [
+      {
+        "user_id": 4,
+        "symbol": "TCS",
+        "qty": 10,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 4,
+        "symbol": "RELIANCE",
+        "qty": 10,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "regno": "trader3",
+    "name": "Trader Three",
+    "password_hash": "password123",
+    "money": 995000000,
+    "locked_money": 0,
+    "margin_locked": 0,
+    "chat_enabled": true,
+    "banned": false,
+    "created_at": 1765276621,
+    "portfolio": [
+      {
+        "user_id": 3,
+        "symbol": "TCS",
+        "qty": 0,
+        "short_qty": 10,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "regno": "testuser",
+    "name": "Test User",
+    "password_hash": "test1234",
+    "money": 541000000,
+    "locked_money": 0,
+    "margin_locked": 0,
+    "chat_enabled": true,
+    "banned": false,
+    "created_at": 1765298929,
+    "portfolio": [
+      {
+        "user_id": 1,
+        "symbol": "RELIANCE",
+        "qty": 40,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "ADANIENT",
+        "qty": 49,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "HDFCBANK",
+        "qty": 40,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "TATAMOTORS",
+        "qty": 41,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "INFY",
+        "qty": 45,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "SUNPHARMA",
+        "qty": 58,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "ICICIBANK",
+        "qty": 53,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "ZOMATO",
+        "qty": 51,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "PAYTM",
+        "qty": 41,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      },
+      {
+        "user_id": 1,
+        "symbol": "TCS",
+        "qty": 41,
+        "short_qty": 0,
+        "locked_qty": 0,
+        "average_buy_price": 1000000
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "regno": "46546",
+    "name": "1HH",
+    "password_hash": "admin",
+    "money": 1000000000,
+    "locked_money": 0,
+    "margin_locked": 0,
+    "chat_enabled": true,
+    "banned": false,
+    "created_at": 1765277638,
+    "portfolio": []
+  }
+]

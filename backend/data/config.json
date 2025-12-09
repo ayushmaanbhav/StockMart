@@ -1,0 +1,16 @@
+{
+    "registration_mode": "free",
+    "allowed_regnos": [],
+    "admin_username": "admin",
+    "admin_password": "admin",
+    "default_starting_money": 1000000000,
+    "chat_enabled": true,
+    "max_sessions_per_user": 1,
+    "currency": {
+        "symbol": "₹",
+        "code": "INR",
+        "locale": "en-IN",
+        "decimals": 2,
+        "symbol_position": "before"
+    }
+}

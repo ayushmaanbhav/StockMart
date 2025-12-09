@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "symbol": "RELIANCE",
+    "name": "Reliance Industries Ltd.",
+    "sector": "Energy",
+    "total_shares": 5000000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 15
+  },
+  {
+    "id": 8,
+    "symbol": "ADANIENT",
+    "name": "Adani Enterprises Ltd.",
+    "sector": "Conglomerate",
+    "total_shares": 800000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 45
+  },
+  {
+    "id": 3,
+    "symbol": "HDFCBANK",
+    "name": "HDFC Bank Ltd.",
+    "sector": "Finance",
+    "total_shares": 3500000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 18
+  },
+  {
+    "id": 6,
+    "symbol": "TATAMOTORS",
+    "name": "Tata Motors Ltd.",
+    "sector": "Auto",
+    "total_shares": 1500000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 35
+  },
+  {
+    "id": 4,
+    "symbol": "INFY",
+    "name": "Infosys Ltd.",
+    "sector": "Tech",
+    "total_shares": 3000000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 14
+  },
+  {
+    "id": 7,
+    "symbol": "SUNPHARMA",
+    "name": "Sun Pharmaceutical",
+    "sector": "Healthcare",
+    "total_shares": 1200000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 22
+  },
+  {
+    "id": 5,
+    "symbol": "ICICIBANK",
+    "name": "ICICI Bank Ltd.",
+    "sector": "Finance",
+    "total_shares": 2500000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 20
+  },
+  {
+    "id": 9,
+    "symbol": "ZOMATO",
+    "name": "Zomato Ltd.",
+    "sector": "Tech",
+    "total_shares": 500000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 50
+  },
+  {
+    "id": 10,
+    "symbol": "PAYTM",
+    "name": "One97 Communications",
+    "sector": "Tech",
+    "total_shares": 400000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 55
+  },
+  {
+    "id": 2,
+    "symbol": "TCS",
+    "name": "Tata Consultancy Services",
+    "sector": "Tech",
+    "total_shares": 4000000,
+    "bankrupt": false,
+    "price_precision": 2,
+    "volatility": 12
+  }
+]
