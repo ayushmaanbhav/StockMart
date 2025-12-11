@@ -1,6 +1,10 @@
 use crate::domain::models::{Order, OrderStatus, Trade, User, Portfolio, Price, Quantity, OrderSide, OrderType, TimeInForce, PRICE_SCALE};
-use crate::domain::orderbook::OrderBook;
-use crate::repository::UserRepository;
+use crate::domain::trading::OrderBook;
+use crate::domain::UserRepository;
+use crate::domain::constants::trading::{SHORT_MARGIN_PERCENT, TRADE_CHANNEL_SIZE};
+use crate::domain::error::TradingError;
+use crate::service::orders::OrdersService;
+use crate::service::trade_history::TradeHistoryService;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,28 +44,90 @@ impl std::fmt::Display for EngineError {
     }
 }
 
+impl EngineError {
+    /// Get an error code for API responses
+    pub fn error_code(&self) -> &'static str {
+        match self {
+            EngineError::MarketClosed => "MARKET_CLOSED",
+            EngineError::UserNotFound => "USER_NOT_FOUND",
+            EngineError::SymbolNotFound => "SYMBOL_NOT_FOUND",
+            EngineError::InsufficientFunds { .. } => "INSUFFICIENT_FUNDS",
+            EngineError::InsufficientShares { .. } => "INSUFFICIENT_SHARES",
+            EngineError::InsufficientMargin { .. } => "INSUFFICIENT_MARGIN",
+            EngineError::OrderNotFound => "ORDER_NOT_FOUND",
+            EngineError::InternalError(_) => "INTERNAL_ERROR",
+        }
+    }
+
+    /// Convert to TradingError for typed error handling
+    pub fn to_trading_error(&self) -> TradingError {
+        match self {
+            EngineError::MarketClosed => TradingError::MarketClosed,
+            EngineError::UserNotFound => TradingError::InvalidOrder {
+                reason: "User not found".to_string(),
+            },
+            EngineError::SymbolNotFound => TradingError::SymbolNotFound {
+                symbol: "unknown".to_string(),
+            },
+            EngineError::InsufficientFunds { required, available } => {
+                TradingError::InsufficientFunds {
+                    required: *required,
+                    available: *available,
+                }
+            }
+            EngineError::InsufficientShares { required, available } => {
+                TradingError::InsufficientShares {
+                    required: *required,
+                    available: *available,
+                }
+            }
+            EngineError::InsufficientMargin { required, available } => {
+                TradingError::InsufficientMargin {
+                    required: *required,
+                    available: *available,
+                }
+            }
+            EngineError::OrderNotFound => TradingError::OrderNotFound { order_id: 0 },
+            EngineError::InternalError(msg) => TradingError::InvalidOrder {
+                reason: msg.clone(),
+            },
+        }
+    }
+}
+
 impl From<EngineError> for String {
     fn from(e: EngineError) -> Self {
         e.to_string()
     }
 }
 
-/// Constants for margin requirements
-const SHORT_MARGIN_PERCENT: i64 = 150; // 150% margin requirement for shorts
+impl From<EngineError> for TradingError {
+    fn from(e: EngineError) -> Self {
+        e.to_trading_error()
+    }
+}
 
 pub struct MatchingEngine {
     orderbooks: DashMap<String, OrderBook>,
     user_repo: Arc<dyn UserRepository>,
+    orders_service: Arc<OrdersService>,
+    trade_history: Arc<TradeHistoryService>,
     trade_sender: broadcast::Sender<Trade>,
     is_open: AtomicBool,
 }
 
 impl MatchingEngine {
-    pub fn new(user_repo: Arc<dyn UserRepository>) -> Self {
-        let (tx, _) = broadcast::channel(1000); // Increased buffer for high-frequency trading
+    pub fn new(
+        user_repo: Arc<dyn UserRepository>,
+        orders_service: Arc<OrdersService>,
+        trade_history: Arc<TradeHistoryService>,
+    ) -> Self {
+        let (tx, _) = broadcast::channel(TRADE_CHANNEL_SIZE);
         Self {
             orderbooks: DashMap::new(),
             user_repo,
+            orders_service,
+            trade_history,
             trade_sender: tx,
             is_open: AtomicBool::new(true),
         }
@@ -128,6 +194,9 @@ impl MatchingEngine {
 
         // Release locked funds/shares
         self.release_locks(&cancelled_order).await?;
+
+        // Remove from orders tracking
+        self.orders_service.remove_order(order_id);
 
         Ok(cancelled_order)
     }
@@ -249,6 +318,24 @@ impl MatchingEngine {
                 tracing::error!("Trade settlement error: {}", e);
                 // In production, this would need careful handling
             }
+
+            // Update maker order in OrdersService
+            // The maker order was resting in the book; check if it's now filled
+            if let Some(maker_order) = self.orders_service.get_order(trade.maker_order_id) {
+                let new_filled = maker_order.filled_qty + trade.qty;
+                if new_filled >= maker_order.qty {
+                    // Fully filled - remove from tracking
+                    self.orders_service.remove_order(trade.maker_order_id);
+                } else {
+                    // Partially filled - update
+                    self.orders_service.update_order(
+                        trade.maker_order_id,
+                        new_filled,
+                        OrderStatus::Partial,
+                    );
+                }
+            }
+
             let _ = self.trade_sender.send(trade.clone());
         }
 
@@ -257,6 +344,11 @@ impl MatchingEngine {
             processed_order.status = OrderStatus::Cancelled;
             // Release remaining locks
             self.release_locks(&processed_order).await?;
+        }
+
+        // Track order in OrdersService if it's still active (resting in book)
+        if processed_order.status == OrderStatus::Open || processed_order.status == OrderStatus::Partial {
+            self.orders_service.add_order(processed_order.clone());
         }
 
         Ok(processed_order)
@@ -358,10 +450,14 @@ impl MatchingEngine {
         let mut buyer = self.user_repo.find_by_id(buyer_id).await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
-        
+
         let mut seller = self.user_repo.find_by_id(seller_id).await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
+
+        // Capture names for trade history before modifying users
+        let buyer_name = buyer.name.clone();
+        let seller_name = seller.name.clone();
 
         let trade_cost = trade.price * trade.qty as i64;
 
@@ -437,6 +533,17 @@ impl MatchingEngine {
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
         self.user_repo.save(seller).await
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
+
+        // Record trade in history
+        let buyer_side = OrderSide::Buy;
+        let seller_side = if is_short_sale { OrderSide::Short } else { OrderSide::Sell };
+        self.trade_history.record_trade(
+            trade.clone(),
+            buyer_name,
+            seller_name,
+            buyer_side,
+            seller_side,
+        );
 
         tracing::info!(
             "Settled trade {}: {} {} @ {} between buyer {} and seller {}",

@@ -5,6 +5,9 @@
 // ============================================
 
 import type { ClientMessage, ServerMessage, ServerMessageType } from '../types/api';
+import { loggers } from '../utils';
+
+const log = loggers.websocket;
 
 type MessageHandler<T = unknown> = (payload: T) => void;
 type ConnectionHandler = () => void;
@@ -59,20 +62,20 @@ class WebSocketService {
 
     connect(): void {
         if (this.ws?.readyState === WebSocket.OPEN) {
-            console.log('[WS] Already connected');
+            log.debug('Already connected');
             return;
         }
 
         if (this.ws?.readyState === WebSocket.CONNECTING) {
-            console.log('[WS] Connection in progress');
+            log.debug('Connection in progress');
             return;
         }
 
-        console.log('[WS] Connecting to', this.url);
+        log.debug('Connecting to', this.url);
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-            console.log('[WS] Connected');
+            log.debug('Connected');
             this.isConnected = true;
             const isReconnect = this.reconnectAttempts > 0;
             this.reconnectAttempts = 0;
@@ -97,7 +100,7 @@ class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
-            console.log('[WS] Disconnected', event.code, event.reason);
+            log.debug('Disconnected', event.code, event.reason);
             this.isConnected = false;
             this.stopHeartbeat();
 
@@ -111,16 +114,16 @@ class WebSocketService {
         };
 
         this.ws.onerror = (error) => {
-            console.error('[WS] Error:', error);
+            log.error('Error:', error);
         };
 
         this.ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data) as ServerMessage;
-                console.log('[WS] Received:', data.type, data.payload);
+                log.debug('Received:', data.type, data.payload);
                 this.dispatch(data.type, data.payload);
             } catch (e) {
-                console.error('[WS] Failed to parse message:', e);
+                log.error('Failed to parse message:', e);
             }
         };
     }
@@ -145,7 +148,7 @@ class WebSocketService {
     private scheduleReconnect(): void {
         if (this.reconnectTimer) return;
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('[WS] Max reconnect attempts reached');
+            log.error('Max reconnect attempts reached');
             return;
         }
 
@@ -155,7 +158,7 @@ class WebSocketService {
             30000 // Max 30 seconds
         );
 
-        console.log(`[WS] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts + 1})`);
+        log.debug(`Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts + 1})`);
 
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
@@ -184,13 +187,13 @@ class WebSocketService {
 
     send(message: ClientMessage): boolean {
         if (this.ws?.readyState === WebSocket.OPEN) {
-            console.log('[WS] Sending:', message.type, message.payload);
+            log.debug('Sending:', message.type, message.payload);
             this.ws.send(JSON.stringify(message));
             return true;
         }
 
         // Queue message for later
-        console.log('[WS] Queuing message:', message.type);
+        log.debug('Queuing message:', message.type);
         this.messageQueue.push({ message, timestamp: Date.now() });
 
         // Clean old messages (older than 30 seconds)
@@ -201,7 +204,7 @@ class WebSocketService {
     }
 
     private flushMessageQueue(): void {
-        console.log(`[WS] Flushing ${this.messageQueue.length} queued messages`);
+        log.debug(`Flushing ${this.messageQueue.length} queued messages`);
         while (this.messageQueue.length > 0) {
             const queued = this.messageQueue.shift();
             if (queued) {

@@ -1,6 +1,11 @@
+//! Admin service for administrative operations.
+
+#![allow(dead_code)]  // Service API includes utility methods for future admin features
+
 use crate::service::engine::MatchingEngine;
-use crate::repository::{CompanyRepository, UserRepository};
-use crate::domain::models::{Portfolio, PRICE_SCALE, Order, OrderType, OrderSide, OrderStatus, TimeInForce, next_order_id};
+use crate::domain::{CompanyRepository, UserRepository};
+use crate::domain::models::{Portfolio, PRICE_SCALE, Order, OrderType, OrderSide, OrderStatus, TimeInForce};
+use crate::infrastructure::id_generator::IdGenerators;
 use std::sync::Arc;
 use rand::Rng;
 use tracing::{debug, info, warn};
@@ -49,8 +54,13 @@ impl AdminService {
     }
 
     pub async fn create_company(&self, symbol: String, name: String, sector: String, volatility: i64) -> Result<(), String> {
+        // Check if symbol already exists
+        if self.company_repo.symbol_exists(&symbol).await.map_err(|e| e.to_string())? {
+            return Err(format!("Symbol {} already exists", symbol));
+        }
+
         let company = crate::domain::models::Company {
-            id: crate::domain::models::next_company_id(),
+            id: IdGenerators::global().next_company_id(),
             symbol: symbol.clone(),
             name,
             sector,
@@ -124,9 +134,9 @@ impl AdminService {
 
         // For each user, reset their portfolio with equal net worth
         for (user_idx, user) in users.iter_mut().enumerate() {
-            // Skip admin (user_id == 1)
-            if user.id == 1 {
-                debug!("Skipping admin user (id=1)");
+            // Skip admin users (using RBAC role check)
+            if user.is_admin() {
+                debug!("Skipping admin user: {} (id={})", user.name, user.id);
                 continue;
             }
 
@@ -198,7 +208,7 @@ impl AdminService {
                 let qty = rng.gen_range(50..200); // Random qty 50-200
 
                 let order = Order {
-                    id: next_order_id(),
+                    id: IdGenerators::global().next_order_id(),
                     user_id: 1, // Admin places these orders
                     symbol: company.symbol.clone(),
                     order_type: OrderType::Limit,
@@ -219,7 +229,7 @@ impl AdminService {
                 let qty = rng.gen_range(50..200); // Random qty 50-200
 
                 let order = Order {
-                    id: next_order_id(),
+                    id: IdGenerators::global().next_order_id(),
                     user_id: 1, // Admin places these orders
                     symbol: company.symbol.clone(),
                     order_type: OrderType::Limit,

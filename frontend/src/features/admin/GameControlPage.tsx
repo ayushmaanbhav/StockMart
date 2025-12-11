@@ -21,6 +21,10 @@ import {
 import { useGameStore } from '../../store/gameStore';
 import websocketService from '../../services/websocket';
 import { Button, Badge, Modal } from '../../components/common';
+import { GAME_DEFAULTS } from '../../constants';
+import { loggers } from '../../utils';
+
+const log = loggers.admin;
 
 // === Game Lifecycle Section ===
 const GameLifecycleSection: React.FC = () => {
@@ -30,14 +34,14 @@ const GameLifecycleSection: React.FC = () => {
 
     // Init game configuration
     // Target net worth - traders will get ~half in cash and ~half in shares
-    const [targetNetworth, setTargetNetworth] = useState('200000');
-    const [sharesPerTrader, setSharesPerTrader] = useState('100');
+    const [targetNetworth, setTargetNetworth] = useState(String(GAME_DEFAULTS.TARGET_NETWORTH));
+    const [sharesPerTrader, setSharesPerTrader] = useState(String(GAME_DEFAULTS.SHARES_PER_TRADER));
 
     const handleAction = async (action: string, payload: Record<string, unknown> = {}) => {
         setIsLoading(action);
         setShowInitModal(false);
 
-        console.log('[Admin] Sending action:', action, payload);
+        log.debug('Sending action:', action, payload);
         websocketService.send({
             type: 'AdminAction',
             payload: { action, payload }
@@ -223,8 +227,8 @@ const GameLifecycleSection: React.FC = () => {
 
 // === Trading Hours Section ===
 const TradingHoursSection: React.FC = () => {
-    const [startTime, setStartTime] = useState('09:00');
-    const [endTime, setEndTime] = useState('16:00');
+    const [startTime, setStartTime] = useState<string>(GAME_DEFAULTS.TRADING_START_TIME);
+    const [endTime, setEndTime] = useState<string>(GAME_DEFAULTS.TRADING_END_TIME);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = () => {
@@ -285,8 +289,8 @@ const TradingHoursSection: React.FC = () => {
 // === Circuit Breaker Section ===
 const CircuitBreakerSection: React.FC = () => {
     const { haltedSymbols } = useGameStore();
-    const [threshold, setThreshold] = useState('10');
-    const [duration, setDuration] = useState('300');
+    const [threshold, setThreshold] = useState(String(GAME_DEFAULTS.CIRCUIT_BREAKER_THRESHOLD));
+    const [duration, setDuration] = useState(String(GAME_DEFAULTS.CIRCUIT_BREAKER_DURATION));
     const [isSaving, setIsSaving] = useState(false);
 
     const activeHalts = Object.entries(haltedSymbols).filter(

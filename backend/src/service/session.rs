@@ -3,9 +3,11 @@
 // Tracks active sessions per user to enforce single-session policy
 // ============================================
 
+#![allow(dead_code)]  // SessionInfo fields and query methods for session management
+
 use dashmap::DashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Unique session ID
 pub type SessionId = u64;
@@ -142,6 +144,11 @@ impl SessionManager {
     /// Get count of active sessions (alias for admin dashboard)
     pub fn active_session_count(&self) -> usize {
         self.total_users()
+    }
+
+    /// Get all active sessions (for admin dashboard)
+    pub fn get_all_sessions(&self) -> Vec<SessionInfo> {
+        self.sessions.iter().map(|r| r.value().clone()).collect()
     }
 }
 

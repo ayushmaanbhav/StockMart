@@ -1,7 +1,7 @@
 use std::fs;
 use std::sync::Arc;
 use serde_json;
-use crate::repository::{UserRepository, CompanyRepository};
+use crate::domain::{UserRepository, CompanyRepository};
 use crate::domain::models::{User, Company};
 use tokio::time::{sleep, Duration};
 
@@ -57,7 +57,11 @@ impl PersistenceService {
         }
     }
 
-    async fn save_data(&self) {
+    /// Save all data to disk.
+    ///
+    /// This method is called periodically and during graceful shutdown
+    /// to ensure data is persisted.
+    pub async fn save_data(&self) {
         // Save Users
         if let Ok(users) = self.user_repo.all().await {
             let users_path = format!("{}/users.json", self.data_dir);

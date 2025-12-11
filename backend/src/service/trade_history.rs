@@ -1,6 +1,8 @@
+//! Trade history service for tracking and querying executed trades.
+
 use std::sync::RwLock;
 use dashmap::DashMap;
-use crate::domain::models::{OrderSide, Price, Quantity, Trade, TradeId, UserId};
+use crate::domain::models::{OrderSide, Trade, UserId};
 use crate::domain::ui_models::{TradeHistoryItem, TradeHistoryResponse};
 
 /// Extended trade record with additional context for history display
@@ -164,6 +166,7 @@ impl TradeHistoryService {
     }
 
     /// Get all trades with optional filters (for admin)
+    #[allow(dead_code)] // API method - use get_all_trades_admin for admin panel
     pub fn get_all_trades(
         &self,
         user_id_filter: Option<UserId>,
@@ -225,6 +228,7 @@ impl TradeHistoryService {
     }
 
     /// Get total trade count for a user
+    #[allow(dead_code)] // API method for user statistics
     pub fn get_user_trade_count(&self, user_id: UserId) -> u64 {
         self.user_trades
             .get(&user_id)
@@ -233,6 +237,7 @@ impl TradeHistoryService {
     }
 
     /// Get recent trades for a symbol (limited count)
+    #[allow(dead_code)] // API alias for get_symbol_trades
     pub fn get_recent_symbol_trades(&self, symbol: &str, count: usize) -> Vec<TradeHistoryItem> {
         self.get_symbol_trades(symbol, count)
     }

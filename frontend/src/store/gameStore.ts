@@ -17,6 +17,7 @@ import type {
     Price,
 } from '../types/models';
 import { PRICE_SCALE } from '../types/models';
+import { LIMITS } from '../constants';
 import type {
     ServerPortfolioUpdate,
     ServerTradeUpdate,
@@ -41,10 +42,18 @@ import type {
     ServerStockTradeHistory,
     TradeHistoryItem,
     FullStateSyncPayload,
+    // Component sync types
+    PortfolioItemUI,
+    OpenOrderUI,
+    MarketIndexUI,
+    LeaderboardEntryUI,
 } from '../types/api';
 import websocketService from '../services/websocket';
 import { useAuthStore } from './authStore';
 import { useUIStore } from './uiStore';
+import { loggers } from '../utils';
+
+const log = loggers.gameStore;
 
 interface Company {
     id: number;
@@ -108,6 +117,17 @@ interface GameState {
     syncId: number;
     lastSyncTimestamp: number;
     isFullSyncComplete: boolean;
+    loading: {
+        portfolio: boolean;
+        orders: boolean;
+        leaderboard: boolean;
+        indices: boolean;
+        orderbook: boolean;
+        candles: boolean;
+        news: boolean;
+        chat: boolean;
+        tradeHistory: boolean;
+    };
 
     // Actions
     setConnected: (connected: boolean) => void;
@@ -130,6 +150,7 @@ interface GameState {
     requestSync: (component?: string) => void;
     requestTradeHistory: (page?: number, symbol?: string) => void;
     requestStockTrades: (symbol: string, count?: number) => void;
+    setLoading: (component: keyof GameState['loading'], isLoading: boolean) => void;
 
     // Internal handlers
     _setCompanies: (companies: Company[]) => void;
@@ -197,18 +218,29 @@ export const useGameStore = create<GameState>((set, get) => ({
     syncId: 0,
     lastSyncTimestamp: 0,
     isFullSyncComplete: false,
+    loading: {
+        portfolio: false,
+        orders: false,
+        leaderboard: false,
+        indices: false,
+        orderbook: false,
+        candles: false,
+        news: false,
+        chat: false,
+        tradeHistory: false,
+    },
 
     // === Actions ===
 
     setConnected: (connected) => {
-        console.log('[GameStore] Connection status:', connected);
+        log.debug('Connection status:', connected);
         set({ isConnected: connected });
     },
 
     setActiveSymbol: (symbol) => {
         const current = get().activeSymbol;
         if (current !== symbol) {
-            console.log('[GameStore] Active symbol changed:', current, '->', symbol);
+            log.debug('Active symbol changed:', current, '->', symbol);
             set({ activeSymbol: symbol });
             get().subscribeSymbol(symbol);
         }
@@ -217,19 +249,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     subscribeSymbol: (symbol) => {
         const subscribed = get().subscribedSymbols;
         if (!subscribed.includes(symbol)) {
-            console.log('[GameStore] Subscribing to symbol:', symbol);
+            log.debug('Subscribing to symbol:', symbol);
             websocketService.send({ type: 'Subscribe', payload: { symbol } });
             set({ subscribedSymbols: [...subscribed, symbol] });
         }
     },
 
     sendChatMessage: (message) => {
-        console.log('[GameStore] Sending chat message:', message);
+        log.debug('Sending chat message:', message);
         websocketService.send({ type: 'Chat', payload: { message } });
     },
 
     placeOrder: (order) => {
-        console.log('[GameStore] Placing order:', order);
+        log.debug('Placing order:', order);
         // Store pending order to merge with OrderAck
         set({ pendingOrder: order });
 
@@ -247,7 +279,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     cancelOrder: (symbol, orderId) => {
-        console.log('[GameStore] Cancelling order:', orderId, 'for', symbol);
+        log.debug('Cancelling order:', orderId, 'for', symbol);
         websocketService.send({
             type: 'CancelOrder',
             payload: { symbol, order_id: orderId }
@@ -257,7 +289,44 @@ export const useGameStore = create<GameState>((set, get) => ({
     // === Sync Actions ===
 
     requestSync: (component) => {
-        console.log('[GameStore] Requesting sync:', component || 'full');
+        log.debug('Requesting sync:', component || 'full');
+
+        // Set loading state for the component being synced
+        if (component) {
+            const componentMap: Record<string, keyof GameState['loading']> = {
+                'portfolio': 'portfolio',
+                'orders': 'orders',
+                'leaderboard': 'leaderboard',
+                'indices': 'indices',
+                'news': 'news',
+                'chat': 'chat',
+                'trade_history': 'tradeHistory',
+            };
+            // Handle symbol-specific components
+            if (component.startsWith('orderbook:')) {
+                get().setLoading('orderbook', true);
+            } else if (component.startsWith('candles:')) {
+                get().setLoading('candles', true);
+            } else if (componentMap[component]) {
+                get().setLoading(componentMap[component], true);
+            }
+        } else {
+            // Full sync - set all loading states
+            set({
+                loading: {
+                    portfolio: true,
+                    orders: true,
+                    leaderboard: true,
+                    indices: true,
+                    orderbook: true,
+                    candles: true,
+                    news: true,
+                    chat: true,
+                    tradeHistory: true,
+                }
+            });
+        }
+
         websocketService.send({
             type: 'RequestSync',
             payload: { component }
@@ -265,7 +334,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     requestTradeHistory: (page, symbol) => {
-        console.log('[GameStore] Requesting trade history:', { page, symbol });
+        log.debug('Requesting trade history:', { page, symbol });
         websocketService.send({
             type: 'GetTradeHistory',
             payload: { page, symbol, page_size: 50 }
@@ -273,17 +342,23 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     requestStockTrades: (symbol, count) => {
-        console.log('[GameStore] Requesting stock trades:', { symbol, count });
+        log.debug('Requesting stock trades:', { symbol, count });
         websocketService.send({
             type: 'GetStockTrades',
             payload: { symbol, count: count || 50 }
         });
     },
 
+    setLoading: (component, isLoading) => {
+        set((state) => ({
+            loading: { ...state.loading, [component]: isLoading }
+        }));
+    },
+
     // === Internal Handlers ===
 
     _setCompanies: (companies) => {
-        console.log('[GameStore] Setting companies:', companies.length, companies.map(c => c.symbol));
+        log.debug('Setting companies:', companies.length, companies.map(c => c.symbol));
         const currentSymbol = get().activeSymbol;
         // If no active symbol yet, set to first company
         const newActiveSymbol = currentSymbol || (companies.length > 0 ? companies[0].symbol : '');
@@ -294,7 +369,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _updatePortfolio: (payload) => {
-        console.log('[GameStore] Portfolio update:', {
+        log.debug('Portfolio update:', {
             money: payload.money / PRICE_SCALE,
             locked: payload.locked / PRICE_SCALE,
             netWorth: payload.net_worth / PRICE_SCALE,
@@ -333,7 +408,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             timestamp: payload.timestamp * 1000,
         };
         set((state) => ({
-            trades: [trade, ...state.trades].slice(0, 100) // Keep last 100
+            trades: [trade, ...state.trades].slice(0, LIMITS.TRADES_HISTORY)
         }));
     },
 
@@ -363,7 +438,7 @@ export const useGameStore = create<GameState>((set, get) => ({
                 return {
                     candles: {
                         ...state.candles,
-                        [payload.symbol]: [...currentCandles, candle].slice(-200) // Keep last 200
+                        [payload.symbol]: [...currentCandles, candle].slice(-LIMITS.CANDLES_PER_SYMBOL)
                     }
                 };
             }
@@ -414,14 +489,14 @@ export const useGameStore = create<GameState>((set, get) => ({
             symbol: payload.news.symbol || undefined,
             timestamp: payload.news.timestamp * 1000,
         };
-        // Limit to 10 most recent news items to prevent ticker speed issues
+        // Limit news items to prevent ticker speed issues
         set((state) => ({
-            news: [news, ...state.news].slice(0, 10)
+            news: [news, ...state.news].slice(0, LIMITS.NEWS_ITEMS)
         }));
     },
 
     _updateLeaderboard: (payload) => {
-        console.log('[GameStore] Leaderboard update:', payload.entries.length, 'entries');
+        log.debug('Leaderboard update:', payload.entries.length, 'entries');
         set({
             leaderboard: payload.entries.map(entry => ({
                 rank: entry.rank,
@@ -432,7 +507,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _addChatMessage: (payload) => {
-        console.log('[GameStore] Chat message from', payload.message.username);
+        log.debug('Chat message from', payload.message.username);
         const msg: ChatMessage = {
             id: payload.message.id,
             userId: payload.message.user_id,
@@ -441,12 +516,12 @@ export const useGameStore = create<GameState>((set, get) => ({
             timestamp: payload.message.timestamp * 1000,
         };
         set((state) => ({
-            chatMessages: [...state.chatMessages, msg].slice(-50)
+            chatMessages: [...state.chatMessages, msg].slice(-LIMITS.CHAT_MESSAGES)
         }));
     },
 
     _setCircuitBreaker: (payload) => {
-        console.log('[GameStore] Circuit breaker:', payload.symbol, 'halted until', payload.halted_until);
+        log.debug('Circuit breaker:', payload.symbol, 'halted until', payload.halted_until);
         set((state) => ({
             haltedSymbols: {
                 ...state.haltedSymbols,
@@ -456,7 +531,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _setMarketStatus: (payload) => {
-        console.log('[GameStore] Market status:', payload.is_open ? 'OPEN' : 'CLOSED');
+        log.debug('Market status:', payload.is_open ? 'OPEN' : 'CLOSED');
         set({ marketOpen: payload.is_open });
     },
 
@@ -464,7 +539,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         const state = get();
         const pendingOrder = state.pendingOrder;
 
-        console.log('Order acknowledged:', payload);
+        log.debug('Order acknowledged:', payload);
 
         // If status is "Filled", the order was fully filled immediately - don't add to open orders
         if (payload.status === 'Filled') {
@@ -536,7 +611,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // === New UI-Ready Handlers ===
 
     _handleFullStateSync: (payload) => {
-        console.log('[GameStore] Full state sync received:', {
+        log.debug('Full state sync received:', {
             syncId: payload.sync_id,
             companies: payload.companies?.length,
             portfolio: !!payload.portfolio,
@@ -690,6 +765,18 @@ export const useGameStore = create<GameState>((set, get) => ({
             syncId: payload.sync_id,
             lastSyncTimestamp: payload.timestamp * 1000,
             isFullSyncComplete: true,
+            // Clear all loading states after full sync
+            loading: {
+                portfolio: false,
+                orders: false,
+                leaderboard: false,
+                indices: false,
+                orderbook: false,
+                candles: false,
+                news: false,
+                chat: false,
+                tradeHistory: false,
+            },
         });
 
         // Update auth store with portfolio data
@@ -709,7 +796,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _handlePortfolioUpdateUI: (payload) => {
-        console.log('[GameStore] Portfolio UI update:', {
+        log.debug('Portfolio UI update:', {
             money: payload.money / PRICE_SCALE,
             netWorth: payload.net_worth / PRICE_SCALE,
             positions: payload.items.length
@@ -748,7 +835,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _handleOpenOrdersUpdate: (payload) => {
-        console.log('[GameStore] Open orders update:', payload.orders.length, 'orders');
+        log.debug('Open orders update:', payload.orders.length, 'orders');
         const openOrders: Order[] = payload.orders.map(o => ({
             id: o.order_id,
             userId: 0,
@@ -782,7 +869,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _handleLeaderboardUpdateUI: (payload) => {
-        console.log('[GameStore] Leaderboard UI update:', payload.entries.length, 'entries');
+        log.debug('Leaderboard UI update:', payload.entries.length, 'entries');
         set({
             leaderboard: payload.entries.map(e => ({
                 rank: e.rank,
@@ -795,7 +882,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _handleTradeHistory: (payload) => {
-        console.log('[GameStore] Trade history received:', {
+        log.debug('Trade history received:', {
             trades: payload.trades.length,
             total: payload.total_count,
             page: payload.page,
@@ -810,7 +897,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     _handleStockTradeHistory: (payload) => {
-        console.log('[GameStore] Stock trade history received:', payload.symbol, payload.trades.length, 'trades');
+        log.debug('Stock trade history received:', payload.symbol, payload.trades.length, 'trades');
         set((state) => ({
             stockTradeHistory: {
                 ...state.stockTradeHistory,
@@ -926,40 +1013,41 @@ websocketService.on('StockTradeHistory', (payload) => {
 
 // === Component Sync Message Bindings ===
 
-websocketService.on('PortfolioSync', (payload: { sync_id: number; money: number; locked_money: number; margin_locked: number; portfolio_value: number; net_worth: number; items: unknown[] }) => {
+websocketService.on('PortfolioSync', (payload: { sync_id: number; money: number; locked_money: number; margin_locked: number; portfolio_value: number; net_worth: number; items: PortfolioItemUI[] }) => {
     useGameStore.getState()._handlePortfolioUpdateUI({
         money: payload.money,
         locked_money: payload.locked_money,
         margin_locked: payload.margin_locked,
         portfolio_value: payload.portfolio_value,
         net_worth: payload.net_worth,
-        items: payload.items as ServerPortfolioUpdateUI['payload']['items'],
+        items: payload.items,
     });
 });
 
-websocketService.on('OpenOrdersSync', (payload: { sync_id: number; orders: unknown[] }) => {
-    useGameStore.getState()._handleOpenOrdersUpdate({ orders: payload.orders as ServerOpenOrdersUpdate['payload']['orders'] });
+websocketService.on('OpenOrdersSync', (payload: { sync_id: number; orders: OpenOrderUI[] }) => {
+    useGameStore.getState()._handleOpenOrdersUpdate({ orders: payload.orders });
 });
 
-websocketService.on('LeaderboardSync', (payload: { sync_id: number; entries: unknown[] }) => {
-    useGameStore.getState()._handleLeaderboardUpdateUI({ entries: payload.entries as ServerLeaderboardUpdateUI['payload']['entries'] });
+websocketService.on('LeaderboardSync', (payload: { sync_id: number; entries: LeaderboardEntryUI[] }) => {
+    useGameStore.getState()._handleLeaderboardUpdateUI({ entries: payload.entries });
 });
 
-websocketService.on('IndicesSync', (payload: { sync_id: number; indices: unknown[] }) => {
-    const indices = payload.indices as ServerIndexUpdateUI['payload']['index'][];
-    for (const index of indices) {
+websocketService.on('IndicesSync', (payload: { sync_id: number; indices: MarketIndexUI[] }) => {
+    for (const index of payload.indices) {
         useGameStore.getState()._handleIndexUpdateUI({ index });
     }
 });
 
-websocketService.on('OrderbookSync', (payload: { sync_id: number; symbol: string; orderbook: OrderBookDepth }) => {
+interface OrderbookSyncPayload {
+    symbol: string;
+    bids: Array<{ price: number; qty: number }>;
+    asks: Array<{ price: number; qty: number }>;
+    spread: number | null;
+}
+
+websocketService.on('OrderbookSync', (payload: { sync_id: number; symbol: string; orderbook: OrderbookSyncPayload }) => {
     const state = useGameStore.getState();
-    const ob = payload.orderbook as unknown as {
-        symbol: string;
-        bids: Array<{ price: number; qty: number }>;
-        asks: Array<{ price: number; qty: number }>;
-        spread: number | null;
-    };
+    const ob = payload.orderbook;
     useGameStore.setState({
         orderBooks: {
             ...state.orderBooks,

@@ -3,11 +3,9 @@
 // System health, performance, and debugging info
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Activity,
-    Cpu,
-    HardDrive,
     Wifi,
     Clock,
     Users,
@@ -16,14 +14,15 @@ import {
     XCircle,
     RefreshCw,
     Server,
-    Database,
-    Zap,
     TrendingUp,
     MessageSquare,
     ShoppingCart
 } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
 import { Badge, Button } from '../../components/common';
+import websocketService from '../../services/websocket';
+import type { AdminDashboardMetrics, ActiveSessionInfo } from '../../types/api';
+import { useConfigStore } from '../../store/configStore';
 
 // === System Health Card ===
 interface HealthMetric {
@@ -67,19 +66,39 @@ const HealthCard: React.FC<{ metric: HealthMetric }> = ({ metric }) => {
 };
 
 // === Connection Monitor ===
-const ConnectionMonitor: React.FC = () => {
+const ConnectionMonitor: React.FC<{ serverUptime: number }> = ({ serverUptime }) => {
     const { isConnected } = useGameStore();
     const [connectionHistory, setConnectionHistory] = useState<Array<{time: Date, connected: boolean}>>([]);
     const [latency, setLatency] = useState<number>(0);
 
     useEffect(() => {
-        // Simulate latency measurement
-        const interval = setInterval(() => {
-            setLatency(Math.floor(Math.random() * 50) + 10); // 10-60ms simulated
-        }, 2000);
+        // Measure actual WebSocket round-trip latency using ping/pong
+        let pingTime = 0;
 
-        return () => clearInterval(interval);
-    }, []);
+        const handlePong = () => {
+            if (pingTime > 0) {
+                const roundTrip = Date.now() - pingTime;
+                setLatency(roundTrip);
+                pingTime = 0;
+            }
+        };
+
+        // Subscribe to Pong messages
+        const unsubscribe = websocketService.on('Pong', handlePong);
+
+        // Send periodic pings to measure latency
+        const interval = setInterval(() => {
+            if (isConnected) {
+                pingTime = Date.now();
+                websocketService.send({ type: 'Ping', payload: {} });
+            }
+        }, 3000);
+
+        return () => {
+            clearInterval(interval);
+            unsubscribe();
+        };
+    }, [isConnected]);
 
     useEffect(() => {
         setConnectionHistory(prev => [
@@ -87,6 +106,16 @@ const ConnectionMonitor: React.FC = () => {
             { time: new Date(), connected: isConnected }
         ]);
     }, [isConnected]);
+
+    const formatUptime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m ${secs}s`;
+    };
 
     return (
         <div className="panel">
@@ -102,16 +131,16 @@ const ConnectionMonitor: React.FC = () => {
             <div className="panel-body">
                 <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center p-3 rounded" style={{ background: 'var(--bg-tertiary)' }}>
-                        <div className="text-2xl font-bold" style={{ color: latency < 50 ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                            {latency}ms
+                        <div className="text-2xl font-bold" style={{ color: latency < 50 ? 'var(--color-success)' : latency < 100 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
+                            {latency > 0 ? `${latency}ms` : '--'}
                         </div>
                         <div className="text-xs text-muted">Latency</div>
                     </div>
                     <div className="text-center p-3 rounded" style={{ background: 'var(--bg-tertiary)' }}>
                         <div className="text-2xl font-bold">
-                            {connectionHistory.filter(h => h.connected).length}
+                            {formatUptime(serverUptime)}
                         </div>
-                        <div className="text-xs text-muted">Uptime Events</div>
+                        <div className="text-xs text-muted">Server Uptime</div>
                     </div>
                     <div className="text-center p-3 rounded" style={{ background: 'var(--bg-tertiary)' }}>
                         <div className="text-2xl font-bold">
@@ -151,37 +180,28 @@ const ConnectionMonitor: React.FC = () => {
 };
 
 // === Message Throughput ===
-const MessageThroughput: React.FC = () => {
-    const { trades, chatMessages } = useGameStore();
-    const [messageRates, setMessageRates] = useState({
-        trades: 0,
-        chat: 0,
-        orders: 0,
-        total: 0
-    });
+interface MessageThroughputProps {
+    totalTrades: number;
+    recentVolume: number;
+    openOrdersCount: number;
+}
 
-    useEffect(() => {
-        // Calculate message rates based on recent activity
-        const now = Date.now();
-        const recentTrades = trades.filter(t => now - t.timestamp < 60000).length;
-        const recentChat = chatMessages.filter(m => now - m.timestamp < 60000).length;
+const MessageThroughput: React.FC<MessageThroughputProps> = ({ totalTrades, recentVolume, openOrdersCount }) => {
+    const { chatMessages } = useGameStore();
+    const formatCurrency = useConfigStore(state => state.formatCurrency);
 
-        setMessageRates({
-            trades: recentTrades,
-            chat: recentChat,
-            orders: Math.floor(recentTrades * 1.5), // Estimate
-            total: recentTrades + recentChat + Math.floor(recentTrades * 1.5)
-        });
-    }, [trades, chatMessages]);
+    // Count chat messages from last 60 seconds
+    const now = Date.now();
+    const recentChat = chatMessages.filter(m => now - m.timestamp < 60000).length;
 
     return (
         <div className="panel">
             <div className="panel-header">
                 <div className="panel-title">
-                    <Zap size={18} />
-                    Message Throughput
+                    <Activity size={18} />
+                    System Activity
                 </div>
-                <span className="text-sm text-muted">Last 60 seconds</span>
+                <span className="text-sm text-muted">Real-time metrics</span>
             </div>
             <div className="panel-body">
                 <div className="space-y-4">
@@ -189,15 +209,15 @@ const MessageThroughput: React.FC = () => {
                         <div className="flex justify-between text-sm mb-1">
                             <span className="flex items-center gap-2">
                                 <TrendingUp size={14} />
-                                Trade Updates
+                                Total Trades
                             </span>
-                            <span className="font-mono">{messageRates.trades}/min</span>
+                            <span className="font-mono">{totalTrades.toLocaleString()}</span>
                         </div>
                         <div className="h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
                             <div
                                 className="h-full rounded-full transition-all"
                                 style={{
-                                    width: `${Math.min((messageRates.trades / 100) * 100, 100)}%`,
+                                    width: `${Math.min((totalTrades / 1000) * 100, 100)}%`,
                                     background: 'var(--color-success)'
                                 }}
                             />
@@ -208,15 +228,15 @@ const MessageThroughput: React.FC = () => {
                         <div className="flex justify-between text-sm mb-1">
                             <span className="flex items-center gap-2">
                                 <ShoppingCart size={14} />
-                                Order Messages
+                                Open Orders
                             </span>
-                            <span className="font-mono">{messageRates.orders}/min</span>
+                            <span className="font-mono">{openOrdersCount}</span>
                         </div>
                         <div className="h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
                             <div
                                 className="h-full rounded-full transition-all"
                                 style={{
-                                    width: `${Math.min((messageRates.orders / 100) * 100, 100)}%`,
+                                    width: `${Math.min((openOrdersCount / 100) * 100, 100)}%`,
                                     background: 'var(--color-primary)'
                                 }}
                             />
@@ -227,15 +247,15 @@ const MessageThroughput: React.FC = () => {
                         <div className="flex justify-between text-sm mb-1">
                             <span className="flex items-center gap-2">
                                 <MessageSquare size={14} />
-                                Chat Messages
+                                Chat Messages (1min)
                             </span>
-                            <span className="font-mono">{messageRates.chat}/min</span>
+                            <span className="font-mono">{recentChat}</span>
                         </div>
                         <div className="h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
                             <div
                                 className="h-full rounded-full transition-all"
                                 style={{
-                                    width: `${Math.min((messageRates.chat / 50) * 100, 100)}%`,
+                                    width: `${Math.min((recentChat / 50) * 100, 100)}%`,
                                     background: 'var(--color-warning)'
                                 }}
                             />
@@ -244,8 +264,8 @@ const MessageThroughput: React.FC = () => {
 
                     <div className="pt-3 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
                         <div className="flex justify-between">
-                            <span className="font-medium">Total Throughput</span>
-                            <span className="font-mono font-bold">{messageRates.total} msg/min</span>
+                            <span className="font-medium">Recent Volume (5min)</span>
+                            <span className="font-mono font-bold">{formatCurrency(recentVolume)}</span>
                         </div>
                     </div>
                 </div>
@@ -305,19 +325,12 @@ const CircuitBreakerStatus: React.FC = () => {
     );
 };
 
-// === Active Sessions ===
-const ActiveSessions: React.FC = () => {
-    const { leaderboard } = useGameStore();
+// === Active Sessions (Real Data) ===
+interface ActiveSessionsProps {
+    sessions: ActiveSessionInfo[];
+}
 
-    // Simulate session data based on leaderboard
-    const sessions = leaderboard.slice(0, 10).map((entry) => ({
-        userId: entry.rank,
-        name: entry.name,
-        connectedAt: new Date(Date.now() - Math.random() * 3600000),
-        lastActivity: new Date(Date.now() - Math.random() * 60000),
-        messagesCount: Math.floor(Math.random() * 100)
-    }));
-
+const ActiveSessions: React.FC<ActiveSessionsProps> = ({ sessions }) => {
     return (
         <div className="panel">
             <div className="panel-header">
@@ -334,26 +347,26 @@ const ActiveSessions: React.FC = () => {
                             <th className="text-left">User</th>
                             <th className="text-right">Connected</th>
                             <th className="text-right">Last Activity</th>
-                            <th className="text-right">Messages</th>
+                            <th className="text-right">Session ID</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sessions.map(session => (
-                            <tr key={session.userId}>
+                            <tr key={session.session_id}>
                                 <td>
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-success)' }} />
-                                        {session.name}
+                                        {session.user_name}
                                     </div>
                                 </td>
                                 <td className="text-right text-sm text-muted">
-                                    {session.connectedAt.toLocaleTimeString()}
+                                    {new Date(session.connected_at * 1000).toLocaleTimeString()}
                                 </td>
                                 <td className="text-right text-sm text-muted">
-                                    {Math.floor((Date.now() - session.lastActivity.getTime()) / 1000)}s ago
+                                    {Math.floor((Date.now() / 1000 - session.last_activity))}s ago
                                 </td>
-                                <td className="text-right font-mono">
-                                    {session.messagesCount}
+                                <td className="text-right font-mono text-xs text-muted">
+                                    #{session.session_id}
                                 </td>
                             </tr>
                         ))}
@@ -371,33 +384,26 @@ const ActiveSessions: React.FC = () => {
     );
 };
 
-// === Server Metrics (Simulated) ===
-const ServerMetrics: React.FC = () => {
-    const [metrics, setMetrics] = useState({
-        cpuUsage: 0,
-        memoryUsage: 0,
-        diskUsage: 0,
-        uptime: 0
-    });
+// === Server Info ===
+interface ServerInfoProps {
+    serverUptime: number;
+    totalTraders: number;
+    activeTraders: number;
+    marketOpen: boolean;
+}
 
-    useEffect(() => {
-        // Simulate server metrics
-        const interval = setInterval(() => {
-            setMetrics({
-                cpuUsage: Math.floor(Math.random() * 30) + 10,
-                memoryUsage: Math.floor(Math.random() * 20) + 40,
-                diskUsage: Math.floor(Math.random() * 5) + 25,
-                uptime: Math.floor((Date.now() % 86400000) / 1000) // Simulate uptime
-            });
-        }, 3000);
-
-        return () => clearInterval(interval);
-    }, []);
-
+const ServerInfo: React.FC<ServerInfoProps> = ({ serverUptime, totalTraders, activeTraders, marketOpen }) => {
     const formatUptime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
-        return `${hours}h ${minutes}m`;
+        if (days > 0) {
+            return `${days}d ${hours}h ${minutes}m`;
+        }
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
     };
 
     return (
@@ -405,79 +411,45 @@ const ServerMetrics: React.FC = () => {
             <div className="panel-header">
                 <div className="panel-title">
                     <Server size={18} />
-                    Server Metrics
+                    Server Status
                 </div>
-                <Button variant="ghost" size="sm">
-                    <RefreshCw size={14} />
-                </Button>
+                <Badge variant={marketOpen ? 'success' : 'warning'}>
+                    {marketOpen ? 'Market Open' : 'Market Closed'}
+                </Badge>
             </div>
             <div className="panel-body">
                 <div className="space-y-4">
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="flex items-center gap-2">
-                                <Cpu size={14} />
-                                CPU Usage
-                            </span>
-                            <span className="font-mono">{metrics.cpuUsage}%</span>
-                        </div>
-                        <div className="h-3 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
-                            <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                    width: `${metrics.cpuUsage}%`,
-                                    background: metrics.cpuUsage > 80 ? 'var(--color-danger)' :
-                                        metrics.cpuUsage > 60 ? 'var(--color-warning)' : 'var(--color-success)'
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="flex items-center gap-2">
-                                <Database size={14} />
-                                Memory Usage
-                            </span>
-                            <span className="font-mono">{metrics.memoryUsage}%</span>
-                        </div>
-                        <div className="h-3 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
-                            <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                    width: `${metrics.memoryUsage}%`,
-                                    background: metrics.memoryUsage > 80 ? 'var(--color-danger)' :
-                                        metrics.memoryUsage > 60 ? 'var(--color-warning)' : 'var(--color-primary)'
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="flex items-center gap-2">
-                                <HardDrive size={14} />
-                                Disk Usage
-                            </span>
-                            <span className="font-mono">{metrics.diskUsage}%</span>
-                        </div>
-                        <div className="h-3 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
-                            <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                    width: `${metrics.diskUsage}%`,
-                                    background: 'var(--color-primary)'
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="pt-3 border-t flex justify-between items-center" style={{ borderColor: 'var(--border-secondary)' }}>
+                    <div className="flex justify-between items-center">
                         <span className="flex items-center gap-2 text-sm">
                             <Clock size={14} />
-                            Uptime
+                            Server Uptime
                         </span>
-                        <span className="font-mono font-bold">{formatUptime(metrics.uptime)}</span>
+                        <span className="font-mono font-bold">{formatUptime(serverUptime)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-2 text-sm">
+                            <Users size={14} />
+                            Registered Traders
+                        </span>
+                        <span className="font-mono font-bold">{totalTraders}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-2 text-sm">
+                            <Activity size={14} />
+                            Active Connections
+                        </span>
+                        <span className="font-mono font-bold">{activeTraders}</span>
+                    </div>
+
+                    <div className="pt-3 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                        <div className="flex justify-between items-center">
+                            <span className="font-medium">Connection Rate</span>
+                            <span className="font-mono">
+                                {totalTraders > 0 ? Math.round((activeTraders / totalTraders) * 100) : 0}%
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -488,6 +460,35 @@ const ServerMetrics: React.FC = () => {
 // === Main Page ===
 export const DiagnosticsPage: React.FC = () => {
     const { isConnected, marketOpen, leaderboard, trades } = useGameStore();
+    const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchMetrics = useCallback(() => {
+        setIsLoading(true);
+        websocketService.send({
+            type: 'AdminAction',
+            payload: { action: 'GetDashboardMetrics', payload: {} }
+        });
+    }, []);
+
+    // Fetch metrics on mount and periodically
+    useEffect(() => {
+        fetchMetrics();
+
+        const interval = setInterval(fetchMetrics, 10000); // Refresh every 10 seconds
+
+        return () => clearInterval(interval);
+    }, [fetchMetrics]);
+
+    // Listen for metrics response
+    useEffect(() => {
+        const unsubscribe = websocketService.on('AdminDashboardMetrics', (payload: { metrics: AdminDashboardMetrics }) => {
+            setMetrics(payload.metrics);
+            setIsLoading(false);
+        });
+
+        return unsubscribe;
+    }, []);
 
     // Health metrics
     const healthMetrics: HealthMetric[] = [
@@ -505,15 +506,15 @@ export const DiagnosticsPage: React.FC = () => {
         },
         {
             name: 'Active Traders',
-            status: leaderboard.length > 0 ? 'healthy' : 'warning',
-            value: leaderboard.length.toString(),
+            status: (metrics?.active_traders ?? leaderboard.length) > 0 ? 'healthy' : 'warning',
+            value: (metrics?.active_traders ?? leaderboard.length).toString(),
             detail: 'Currently connected',
             icon: <Users size={14} />
         },
         {
             name: 'Trade Volume',
             status: 'healthy',
-            value: trades.length.toString(),
+            value: (metrics?.total_trades ?? trades.length).toString(),
             detail: 'Total executions',
             icon: <TrendingUp size={14} />
         }
@@ -522,12 +523,18 @@ export const DiagnosticsPage: React.FC = () => {
     return (
         <div className="diagnostics-page">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Activity size={24} />
-                    System Diagnostics
-                </h1>
-                <p className="text-muted mt-1">Monitor system health, performance, and connectivity</p>
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Activity size={24} />
+                        System Diagnostics
+                    </h1>
+                    <p className="text-muted mt-1">Monitor system health, performance, and connectivity</p>
+                </div>
+                <Button variant="secondary" onClick={fetchMetrics} disabled={isLoading}>
+                    <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                    Refresh
+                </Button>
             </div>
 
             {/* Health Overview */}
@@ -541,20 +548,29 @@ export const DiagnosticsPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-6">
-                    <ConnectionMonitor />
+                    <ConnectionMonitor serverUptime={metrics?.server_uptime_secs ?? 0} />
                     <CircuitBreakerStatus />
                 </div>
 
                 {/* Right Column */}
                 <div className="space-y-6">
-                    <MessageThroughput />
-                    <ServerMetrics />
+                    <MessageThroughput
+                        totalTrades={metrics?.total_trades ?? 0}
+                        recentVolume={metrics?.recent_volume ?? 0}
+                        openOrdersCount={metrics?.open_orders_count ?? 0}
+                    />
+                    <ServerInfo
+                        serverUptime={metrics?.server_uptime_secs ?? 0}
+                        totalTraders={metrics?.total_traders ?? 0}
+                        activeTraders={metrics?.active_traders ?? 0}
+                        marketOpen={metrics?.market_open ?? marketOpen}
+                    />
                 </div>
             </div>
 
             {/* Active Sessions - Full Width */}
             <div className="mt-6">
-                <ActiveSessions />
+                <ActiveSessions sessions={metrics?.active_sessions ?? []} />
             </div>
         </div>
     );

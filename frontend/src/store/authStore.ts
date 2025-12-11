@@ -51,18 +51,11 @@ export const useAuthStore = create<AuthState>()(
             loginAdmin: async (username: string, password: string) => {
                 set({ isLoading: true, error: null });
 
-                // For demo: admin is user_id 1
-                if (username === 'admin' && password === 'admin') {
-                    websocketService.send({
-                        type: 'Auth',
-                        payload: { token: '1' }
-                    });
-                } else {
-                    set({
-                        isLoading: false,
-                        error: 'Invalid admin credentials'
-                    });
-                }
+                // Use Login message for admin authentication - role is validated server-side
+                websocketService.send({
+                    type: 'Login',
+                    payload: { regno: username, password }
+                });
             },
 
             register: async (regno: string, name: string, password: string) => {
@@ -138,9 +131,9 @@ export const useAuthStore = create<AuthState>()(
 
 // === WebSocket Event Bindings ===
 
-websocketService.on('AuthSuccess', (payload: { user_id: number; name: string }) => {
-    // Determine role based on user_id (admin is id 1)
-    const role: UserRole = payload.user_id === 1 ? 'admin' : 'trader';
+websocketService.on('AuthSuccess', (payload: { user_id: number; name: string; role: string }) => {
+    // Use role from server response
+    const role: UserRole = payload.role === 'admin' ? 'admin' : 'trader';
     useAuthStore.getState()._handleAuthSuccess(payload.user_id, payload.name, role);
 });
 
@@ -148,8 +141,10 @@ websocketService.on('AuthFailed', (payload: { reason: string }) => {
     useAuthStore.getState()._handleAuthFailed(payload.reason);
 });
 
-websocketService.on('RegisterSuccess', (payload: { user_id: number; name: string }) => {
-    useAuthStore.getState()._handleAuthSuccess(payload.user_id, payload.name, 'trader');
+websocketService.on('RegisterSuccess', (payload: { user_id: number; name: string; role: string }) => {
+    // Use role from server response
+    const role: UserRole = payload.role === 'admin' ? 'admin' : 'trader';
+    useAuthStore.getState()._handleAuthSuccess(payload.user_id, payload.name, role);
 });
 
 websocketService.on('RegisterFailed', (payload: { reason: string }) => {

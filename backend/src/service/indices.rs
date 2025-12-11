@@ -1,13 +1,14 @@
 use crate::domain::ui_models::MarketIndexUI;
 use crate::service::market::MarketService;
-use crate::repository::CompanyRepository;
+use crate::domain::CompanyRepository;
 use dashmap::DashMap;
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 use serde::{Serialize, Deserialize};
 
-/// Legacy IndexValue for backward compatibility
+/// IndexValue for individual index queries
+#[allow(dead_code)] // API type for direct index queries
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexValue {
     pub name: String,
@@ -48,6 +49,7 @@ impl IndicesService {
     }
 
     /// Get a specific index by name
+    #[allow(dead_code)] // API method for querying individual indices
     pub fn get_index(&self, name: &str) -> Option<MarketIndexUI> {
         self.current_indices
             .read()
@@ -77,8 +79,8 @@ impl IndicesService {
                 let price = if let Some(last) = candles.last() {
                     last.close
                 } else {
-                    // Fallback to some base price or skip
-                    100 * 10000 // 100.00 default
+                    // Fallback to base share price
+                    crate::domain::constants::user::BASE_SHARE_PRICE
                 };
 
                 let entry = sector_sums.entry(company.sector.clone()).or_insert((0, 0));
@@ -111,9 +113,10 @@ impl IndicesService {
 
             // VIX is based on volatility factor (0-100) mapped to typical VIX range (10-30)
             // Add very small random noise (±0.5) for natural variation
+            use crate::domain::constants::PRICE_SCALE;
             let base_vix = 10 + (avg_volatility * 20 / 100); // Maps 0-100 volatility to 10-30 VIX
-            let noise = rand::random::<i64>() % 10000 - 5000; // ±0.50 random noise
-            let vix = base_vix * 10000 + noise;
+            let noise = rand::random::<i64>() % PRICE_SCALE - (PRICE_SCALE / 2); // ±0.50 random noise
+            let vix = base_vix * PRICE_SCALE + noise;
 
             let vix_ui = self.create_index_ui("VIX", vix, timestamp);
             updated_indices.push(vix_ui.clone());
@@ -157,5 +160,152 @@ impl IndicesService {
             change_percent,
             timestamp,
         }
+    }
+
+    /// Exposed for testing - calculate indices once
+    #[cfg(test)]
+    pub async fn test_calculate_indices(&self) {
+        self.calculate_indices().await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::models::Company;
+    use crate::infrastructure::persistence::InMemoryCompanyRepository;
+
+    async fn create_test_service() -> IndicesService {
+        let market = Arc::new(MarketService::new());
+        let repo: Arc<dyn CompanyRepository> = Arc::new(InMemoryCompanyRepository::new());
+        IndicesService::new(market, repo)
+    }
+
+    async fn create_test_service_with_companies() -> IndicesService {
+        let market = Arc::new(MarketService::new());
+        let repo = Arc::new(InMemoryCompanyRepository::new());
+
+        // Add some companies
+        let company1 = Company {
+            id: 1,
+            symbol: "AAPL".to_string(),
+            name: "Apple Inc.".to_string(),
+            sector: "Tech".to_string(),
+            total_shares: 1_000_000,
+            bankrupt: false,
+            price_precision: 2,
+            volatility: 50,
+        };
+        let company2 = Company {
+            id: 2,
+            symbol: "GOOGL".to_string(),
+            name: "Alphabet Inc.".to_string(),
+            sector: "Tech".to_string(),
+            total_shares: 500_000,
+            bankrupt: false,
+            price_precision: 2,
+            volatility: 40,
+        };
+        let company3 = Company {
+            id: 3,
+            symbol: "JPM".to_string(),
+            name: "JPMorgan Chase".to_string(),
+            sector: "Finance".to_string(),
+            total_shares: 2_000_000,
+            bankrupt: false,
+            price_precision: 2,
+            volatility: 30,
+        };
+
+        repo.save(company1).await.unwrap();
+        repo.save(company2).await.unwrap();
+        repo.save(company3).await.unwrap();
+
+        IndicesService::new(Arc::new(MarketService::new()), repo)
+    }
+
+    #[tokio::test]
+    async fn test_indices_service_new() {
+        let svc = create_test_service().await;
+        // Should be able to subscribe
+        let _rx = svc.subscribe_indices();
+    }
+
+    #[tokio::test]
+    async fn test_get_all_indices_empty() {
+        let svc = create_test_service().await;
+        assert!(svc.get_all_indices().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_index_not_found() {
+        let svc = create_test_service().await;
+        assert!(svc.get_index("MARKET").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_calculate_indices_with_companies() {
+        let svc = create_test_service_with_companies().await;
+        svc.test_calculate_indices().await;
+
+        let indices = svc.get_all_indices();
+        // Should have sector indices (Tech, Finance), VIX, and MARKET
+        assert!(!indices.is_empty());
+
+        // Check for specific indices
+        let names: Vec<&str> = indices.iter().map(|i| i.name.as_str()).collect();
+        assert!(names.contains(&"VIX"));
+        assert!(names.contains(&"MARKET"));
+        assert!(names.contains(&"SECTOR:Tech"));
+        assert!(names.contains(&"SECTOR:Finance"));
+    }
+
+    #[tokio::test]
+    async fn test_get_index_after_calculation() {
+        let svc = create_test_service_with_companies().await;
+        svc.test_calculate_indices().await;
+
+        let vix = svc.get_index("VIX");
+        assert!(vix.is_some());
+        let vix = vix.unwrap();
+        assert_eq!(vix.name, "VIX");
+        assert!(vix.value > 0);
+    }
+
+    #[tokio::test]
+    async fn test_index_change_calculation() {
+        let svc = create_test_service_with_companies().await;
+
+        // First calculation
+        svc.test_calculate_indices().await;
+        let first_indices = svc.get_all_indices();
+
+        // Second calculation
+        svc.test_calculate_indices().await;
+        let second_indices = svc.get_all_indices();
+
+        // MARKET index should exist in both
+        let first_market = first_indices.iter().find(|i| i.name == "MARKET");
+        let second_market = second_indices.iter().find(|i| i.name == "MARKET");
+
+        assert!(first_market.is_some());
+        assert!(second_market.is_some());
+
+        // Second should have previous_value set to first's value
+        let first_market = first_market.unwrap();
+        let second_market = second_market.unwrap();
+        assert_eq!(second_market.previous_value, first_market.value);
+    }
+
+    #[test]
+    fn test_index_value_struct() {
+        let iv = IndexValue {
+            name: "TEST".to_string(),
+            value: 1000000,
+            timestamp: 12345,
+        };
+        assert_eq!(iv.name, "TEST");
+        assert_eq!(iv.value, 1000000);
+        assert_eq!(iv.timestamp, 12345);
     }
 }

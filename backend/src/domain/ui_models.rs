@@ -1,3 +1,11 @@
+//! UI-ready data transfer objects for frontend communication.
+//!
+//! These structs are serialized to JSON and sent to the frontend via WebSocket.
+//! The `dead_code` lint is suppressed because Serde serialization uses all fields
+//! at runtime, which the compiler cannot detect statically.
+
+#![allow(dead_code)]  // Serde serialization uses these at runtime
+
 use serde::{Deserialize, Serialize};
 use crate::domain::models::{
     ChatMessage, OrderId, OrderSide, OrderStatus, OrderType, Price, Quantity, TimeInForce,
@@ -254,6 +262,21 @@ pub struct AdminDashboardMetrics {
     pub open_orders_count: usize,
     pub market_open: bool,
     pub timestamp: i64,
+    // Server/system metrics
+    pub server_uptime_secs: u64,
+    pub active_sessions: Vec<ActiveSessionInfo>,
+}
+
+// --- Active Session Info ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActiveSessionInfo {
+    pub session_id: u64,
+    pub user_id: UserId,
+    pub user_name: String,
+    pub connected_at: i64,      // Unix timestamp
+    pub last_activity: i64,     // Unix timestamp
+    pub messages_sent: u64,
 }
 
 // --- Component Sync Responses ---
@@ -313,12 +336,5 @@ pub struct ChatSyncResponse {
     pub messages: Vec<ChatMessage>,
 }
 
-// --- Sync ID Generator ---
-
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static NEXT_SYNC_ID: AtomicU64 = AtomicU64::new(1);
-
-pub fn next_sync_id() -> u64 {
-    NEXT_SYNC_ID.fetch_add(1, Ordering::Relaxed)
-}
+// Note: Sync ID generation has been consolidated into infrastructure/id_generator.rs
+// Use IdGenerators::global().next_sync_id() instead

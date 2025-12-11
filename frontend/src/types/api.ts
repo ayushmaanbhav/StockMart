@@ -361,6 +361,171 @@ export interface ServerConfig {
     };
 }
 
+// Frontend constants from server
+export interface FrontendConstants {
+    limits: {
+        trades_history: number;
+        candles_per_symbol: number;
+        chat_messages: number;
+        news_items: number;
+        trade_history_page_size: number;
+        stock_trades_count: number;
+    };
+    ui: {
+        orderbook_depth: number;
+        leaderboard_entries: number;
+        chat_messages_visible: number;
+        trade_history_widget: number;
+        stock_trades_widget: number;
+    };
+    animation: {
+        news_ticker_base_duration: number;
+        news_ticker_per_item: number;
+    };
+    trading: {
+        default_order_qty: number;
+        short_margin_percent: number;
+    };
+    game_defaults: {
+        target_networth: number;
+        shares_per_trader: number;
+        trading_start_time: string;
+        trading_end_time: string;
+        circuit_breaker_threshold: number;
+        circuit_breaker_duration: number;
+    };
+    polling: {
+        dashboard_metrics_interval: number;
+    };
+    company_form: {
+        symbol_max_length: number;
+        volatility_min: number;
+        volatility_max: number;
+        volatility_step: number;
+        default_total_shares: number;
+        default_initial_price: number;
+    };
+    sectors: string[];
+    labels: FrontendLabels;
+    validation: ValidationRules;
+}
+
+// UI Labels from server
+export interface FrontendLabels {
+    app_name: string;
+    app_tagline: string;
+    auth: AuthLabels;
+    trading: TradingLabels;
+    admin: AdminLabels;
+    common: CommonLabels;
+}
+
+export interface AuthLabels {
+    login_title: string;
+    login_subtitle: string;
+    register_title: string;
+    register_subtitle: string;
+    regno_label: string;
+    regno_placeholder: string;
+    password_label: string;
+    password_placeholder: string;
+    confirm_password_label: string;
+    name_label: string;
+    name_placeholder: string;
+    login_button: string;
+    register_button: string;
+    no_account_text: string;
+    has_account_text: string;
+    starting_balance_info: string;
+}
+
+export interface TradingLabels {
+    order_book: string;
+    portfolio: string;
+    open_orders: string;
+    trade_history: string;
+    buy: string;
+    sell: string;
+    short: string;
+    market: string;
+    limit: string;
+    quantity: string;
+    price: string;
+    total: string;
+    bids: string;
+    asks: string;
+    no_bids: string;
+    no_asks: string;
+    no_trades: string;
+    no_orders: string;
+    cancel_order: string;
+    cancel_all: string;
+    confirm_order: string;
+    gtc: string;
+    gtc_full: string;
+    ioc: string;
+    ioc_full: string;
+    short_margin_warning: string;
+    market_order_info: string;
+    no_liquidity: string;
+    positions: string;
+    holdings: string;
+    cash: string;
+    net_worth: string;
+}
+
+export interface AdminLabels {
+    dashboard: string;
+    game_control: string;
+    traders: string;
+    companies: string;
+    diagnostics: string;
+    market_open: string;
+    market_closed: string;
+    open_market: string;
+    close_market: string;
+    initialize_game: string;
+    ban_trader: string;
+    unban_trader: string;
+    mute_trader: string;
+    unmute_trader: string;
+    create_company: string;
+    mark_bankrupt: string;
+}
+
+export interface CommonLabels {
+    loading: string;
+    error: string;
+    success: string;
+    cancel: string;
+    confirm: string;
+    save: string;
+    refresh: string;
+    search: string;
+    no_results: string;
+    connected: string;
+    disconnected: string;
+    reconnecting: string;
+    live: string;
+    offline: string;
+}
+
+export interface ValidationRules {
+    regno_min_length: number;
+    regno_max_length: number;
+    password_min_length: number;
+    name_min_length: number;
+    name_max_length: number;
+    chat_message_max_length: number;
+}
+
+export interface ServerFrontendConstants {
+    type: 'FrontendConstants';
+    payload: {
+        constants: FrontendConstants;
+    };
+}
+
 // ==================== NEW UI-READY MESSAGE TYPES ====================
 
 // UI-ready portfolio item with pre-computed values
@@ -628,6 +793,19 @@ export interface AdminDashboardMetrics {
     open_orders_count: number;
     market_open: boolean;
     timestamp: number;
+    // Server metrics
+    server_uptime_secs: number;
+    active_sessions: ActiveSessionInfo[];
+}
+
+// Active session info for admin dashboard
+export interface ActiveSessionInfo {
+    session_id: number;
+    user_id: number;
+    user_name: string;
+    connected_at: number;  // Unix timestamp
+    last_activity: number; // Unix timestamp
+    messages_sent: number;
 }
 
 // Admin trade history response
@@ -764,6 +942,7 @@ export type ServerMessage =
     | ServerSystem
     | ServerCompanyList
     | ServerConfig
+    | ServerFrontendConstants
     // New UI-ready messages
     | ServerFullStateSync
     | ServerPortfolioUpdateUI

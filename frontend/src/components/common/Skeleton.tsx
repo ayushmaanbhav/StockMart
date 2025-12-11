@@ -81,18 +81,21 @@ export const SkeletonTable: React.FC<{ rows?: number; cols?: number; className?:
     </div>
 );
 
+// Deterministic heights for skeleton chart bars (avoids layout shifts)
+const SKELETON_BAR_HEIGHTS = [65, 82, 48, 91, 57, 74, 43, 88, 62, 79, 51, 95];
+
 export const SkeletonChart: React.FC<{ height?: number; className?: string }> = ({
     height = 200,
     className = '',
 }) => (
     <div className={`skeleton-chart ${className}`} style={{ height }}>
         <div className="skeleton-chart-bars">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {SKELETON_BAR_HEIGHTS.map((barHeight, i) => (
                 <Skeleton
                     key={i}
                     variant="rectangular"
                     width={20}
-                    height={Math.random() * 60 + 40}
+                    height={barHeight}
                 />
             ))}
         </div>

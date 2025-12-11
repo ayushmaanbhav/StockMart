@@ -21,6 +21,7 @@ import { useConfigStore } from '../../store/configStore';
 import { useAdminStore } from '../../store/adminStore';
 import websocketService from '../../services/websocket';
 import { Badge, Button } from '../../components/common';
+import { POLLING } from '../../constants';
 
 // Format helpers
 const formatNumber = (value: number) => {
@@ -76,7 +77,7 @@ export const AdminDashboardPage: React.FC = () => {
     // Fetch metrics on mount and periodically
     React.useEffect(() => {
         fetchMetrics();
-        const interval = setInterval(fetchMetrics, 10000); // Refresh every 10 seconds
+        const interval = setInterval(fetchMetrics, POLLING.DASHBOARD_METRICS_INTERVAL);
         return () => clearInterval(interval);
     }, [fetchMetrics]);
 

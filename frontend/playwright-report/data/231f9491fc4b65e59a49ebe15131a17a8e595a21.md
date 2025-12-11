@@ -1,0 +1,245 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "StockMart" [ref=e6] [cursor=pointer]:
+      - /url: /trade
+      - img [ref=e7]
+      - generic [ref=e10]: StockMart
+    - generic [ref=e12]:
+      - generic [ref=e13]: Net Worth
+      - generic [ref=e14]: ₹9,92,55,18,92,100.00
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e18]
+        - generic [ref=e22]: Live
+      - button "Toggle theme" [ref=e23] [cursor=pointer]:
+        - img [ref=e24]
+      - generic [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: T
+        - generic [ref=e32]:
+          - generic [ref=e33]: Test Trader One
+          - generic [ref=e34]: Trader
+      - button "Logout" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+  - main [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - img [ref=e43]
+          - generic [ref=e46]: LIVE
+        - generic [ref=e47]: Waiting for market data...
+      - generic [ref=e48]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - generic [ref=e54]: PAYTM
+        - table [ref=e59]:
+          - row "Charting by TradingView" [ref=e60]:
+            - cell
+            - cell "Charting by TradingView" [ref=e61]:
+              - link "Charting by TradingView" [ref=e65] [cursor=pointer]:
+                - /url: https://www.tradingview.com/?utm_medium=lwc-link&utm_campaign=lwc-chart&utm_source=localhost/trade
+                - img [ref=e66]
+            - cell [ref=e70]
+          - row [ref=e74]:
+            - cell
+            - cell [ref=e75]
+            - cell [ref=e79]
+      - generic [ref=e82]:
+        - button "PAYTM ₹100.00" [ref=e85] [cursor=pointer]:
+          - generic [ref=e86]:
+            - generic [ref=e87]: PAYTM
+            - generic [ref=e88]: ₹100.00
+          - img [ref=e89]
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - generic [ref=e93] [cursor=pointer]:
+              - generic [ref=e94]:
+                - img [ref=e95]
+                - img [ref=e97]
+                - text: Leaderboard
+              - generic [ref=e103]: "0"
+            - generic [ref=e105]: Loading...
+          - generic [ref=e106]:
+            - generic [ref=e107] [cursor=pointer]:
+              - generic [ref=e108]:
+                - img [ref=e109]
+                - img [ref=e111]
+                - text: Chat
+              - generic [ref=e113]: "0"
+            - generic [ref=e115]: No messages yet
+            - generic [ref=e116]:
+              - textbox "Type a message..." [ref=e117]
+              - button "Send" [ref=e118] [cursor=pointer]
+          - generic [ref=e119]:
+            - generic [ref=e120] [cursor=pointer]:
+              - generic [ref=e121]:
+                - img [ref=e122]
+                - img [ref=e124]
+                - text: Quick Trade
+              - generic [ref=e125]: PAYTM
+            - generic [ref=e126]:
+              - generic [ref=e127]:
+                - button "Buy" [ref=e128] [cursor=pointer]
+                - button "Sell" [ref=e129] [cursor=pointer]
+                - button "Short" [ref=e130] [cursor=pointer]
+              - generic [ref=e131]:
+                - button "Market" [ref=e132] [cursor=pointer]
+                - button "Limit" [ref=e133] [cursor=pointer]
+              - generic [ref=e134]:
+                - generic [ref=e135]:
+                  - generic [ref=e136]: Qty
+                  - spinbutton [ref=e137]: "10"
+                - generic [ref=e138]:
+                  - generic [ref=e139]: Price
+                  - spinbutton [ref=e140]: "100.00"
+              - generic [ref=e141]:
+                - generic [ref=e142]: Time in Force
+                - generic [ref=e143]:
+                  - button "GTC" [ref=e144] [cursor=pointer]
+                  - button "IOC" [ref=e145] [cursor=pointer]
+              - generic [ref=e146]:
+                - generic [ref=e147]: Est. Total
+                - generic [ref=e148]: ₹1,000.00
+              - button "Buy PAYTM" [ref=e149] [cursor=pointer]
+          - generic [ref=e150]:
+            - generic [ref=e152] [cursor=pointer]:
+              - img [ref=e153]
+              - img [ref=e155]
+              - text: Open Orders
+            - generic [ref=e157]: No open orders
+      - generic [ref=e158]:
+        - generic [ref=e159]:
+          - generic [ref=e161]:
+            - img [ref=e162]
+            - text: Order Book
+          - generic [ref=e164]:
+            - button "Depth" [ref=e165] [cursor=pointer]
+            - button "Trades" [ref=e166] [cursor=pointer]
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - generic [ref=e169]: Bids
+              - generic "Click to sell at this price" [ref=e170] [cursor=pointer]:
+                - generic [ref=e172]: ₹100.00
+                - generic [ref=e173]: "555"
+            - generic [ref=e174]:
+              - generic [ref=e175]: Asks
+              - generic [ref=e176]: No asks
+        - generic [ref=e177]:
+          - generic [ref=e179]:
+            - img [ref=e180]
+            - text: Portfolio
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - generic [ref=e185]:
+                - img [ref=e186]
+                - text: Cash
+              - text: ₹83,56,64,59,13,45,725.10
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - img [ref=e190]
+                - text: Holdings
+              - text: ₹43,100.00
+            - generic [ref=e193]:
+              - generic [ref=e194]:
+                - img [ref=e195]
+                - text: Net Worth
+              - text: ₹9,92,65,30,88,100.00
+          - generic [ref=e198]:
+            - button "Positions" [ref=e199] [cursor=pointer]
+            - button "Trade History" [ref=e200] [cursor=pointer]
+          - generic [ref=e201]:
+            - generic [ref=e203]: Positions
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - generic [ref=e206]:
+                  - generic [ref=e207]: ZOMATO
+                  - generic [ref=e208]: 36 @ ₹100.00
+                - generic [ref=e209]:
+                  - generic [ref=e210]: ₹3,600.00
+                  - generic [ref=e211]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e212] [cursor=pointer]
+              - generic [ref=e213]:
+                - generic [ref=e214]:
+                  - generic [ref=e215]: TCS
+                  - generic [ref=e216]: 46 @ ₹100.00
+                - generic [ref=e217]:
+                  - generic [ref=e218]: ₹4,600.00
+                  - generic [ref=e219]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e220] [cursor=pointer]
+              - generic [ref=e221]:
+                - generic [ref=e222]:
+                  - generic [ref=e223]: TATAMOTORS
+                  - generic [ref=e224]: 45 @ ₹100.00
+                - generic [ref=e225]:
+                  - generic [ref=e226]: ₹4,500.00
+                  - generic [ref=e227]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e228] [cursor=pointer]
+              - generic [ref=e229]:
+                - generic [ref=e230]:
+                  - generic [ref=e231]: RELIANCE
+                  - generic [ref=e232]: 42 @ ₹100.00
+                - generic [ref=e233]:
+                  - generic [ref=e234]: ₹4,200.00
+                  - generic [ref=e235]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e236] [cursor=pointer]
+              - generic [ref=e237]:
+                - generic [ref=e238]:
+                  - generic [ref=e239]: HDFCBANK
+                  - generic [ref=e240]: 54 @ ₹100.00
+                - generic [ref=e241]:
+                  - generic [ref=e242]: ₹5,400.00
+                  - generic [ref=e243]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e244] [cursor=pointer]
+              - generic [ref=e245]:
+                - generic [ref=e246]:
+                  - generic [ref=e247]: PAYTM
+                  - generic [ref=e248]: 16 @ ₹100.00
+                - generic [ref=e249]:
+                  - generic [ref=e250]: ₹1,600.00
+                  - generic [ref=e251]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e252] [cursor=pointer]
+              - generic [ref=e253]:
+                - generic [ref=e254]:
+                  - generic [ref=e255]: ADANIENT
+                  - generic [ref=e256]: 44 @ ₹100.00
+                - generic [ref=e257]:
+                  - generic [ref=e258]: ₹4,400.00
+                  - generic [ref=e259]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e260] [cursor=pointer]
+              - generic [ref=e261]:
+                - generic [ref=e262]:
+                  - generic [ref=e263]: SUNPHARMA
+                  - generic [ref=e264]: 54 @ ₹100.00
+                - generic [ref=e265]:
+                  - generic [ref=e266]: ₹5,400.00
+                  - generic [ref=e267]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e268] [cursor=pointer]
+              - generic [ref=e269]:
+                - generic [ref=e270]:
+                  - generic [ref=e271]: INFY
+                  - generic [ref=e272]: 51 @ ₹100.00
+                - generic [ref=e273]:
+                  - generic [ref=e274]: ₹5,100.00
+                  - generic [ref=e275]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e276] [cursor=pointer]
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - generic [ref=e279]: ICICIBANK
+                  - generic [ref=e280]: 43 @ ₹100.00
+                - generic [ref=e281]:
+                  - generic [ref=e282]: ₹4,300.00
+                  - generic [ref=e283]: +₹0.00 (+0.00%)
+                - button "Sell" [ref=e284] [cursor=pointer]
+      - generic [ref=e285]:
+        - generic [ref=e286]:
+          - img [ref=e287]
+          - generic [ref=e290]: NEWS
+        - generic [ref=e291]: Waiting for news...
+  - generic [ref=e293]:
+    - img [ref=e295]
+    - generic [ref=e300]: "Company not found:"
+    - button [ref=e301] [cursor=pointer]:
+      - img [ref=e302]
+```

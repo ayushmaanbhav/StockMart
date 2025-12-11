@@ -3,6 +3,8 @@
 // Logs all game state changes and transactions to JSON
 // ============================================
 
+#![allow(dead_code)]  // Logger API includes methods for various event types
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};

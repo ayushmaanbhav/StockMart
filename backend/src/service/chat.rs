@@ -34,6 +34,7 @@ impl ChatService {
         let _ = self.tx.send(message);
     }
 
+    #[allow(dead_code)] // API method for retrieving full chat history
     pub fn get_history(&self) -> Vec<ChatMessage> {
         self.history.lock().unwrap().clone()
     }

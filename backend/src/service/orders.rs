@@ -1,4 +1,5 @@
-use std::sync::Arc;
+//! Orders service for tracking open orders.
+
 use dashmap::DashMap;
 use crate::domain::models::{Order, OrderId, OrderStatus, UserId, Quantity};
 use crate::domain::ui_models::OpenOrderUI;
@@ -67,7 +68,7 @@ impl OrdersService {
             .map(|orders| {
                 orders
                     .iter()
-                    .filter(|o| matches!(o.status, OrderStatus::Open | OrderStatus::Partial))
+                    .filter(|o| o.is_active())
                     .map(order_to_ui)
                     .collect()
             })
@@ -75,11 +76,12 @@ impl OrdersService {
     }
 
     /// Get all open orders across all users
+    #[allow(dead_code)] // API method for admin use
     pub fn get_all_orders(&self) -> Vec<OpenOrderUI> {
         let mut all_orders = Vec::new();
         for entry in self.user_orders.iter() {
             for order in entry.value().iter() {
-                if matches!(order.status, OrderStatus::Open | OrderStatus::Partial) {
+                if order.is_active() {
                     all_orders.push(order_to_ui(order));
                 }
             }
@@ -90,13 +92,12 @@ impl OrdersService {
     }
 
     /// Get all open orders for a specific symbol
+    #[allow(dead_code)] // API method for symbol-specific queries
     pub fn get_orders_by_symbol(&self, symbol: &str) -> Vec<OpenOrderUI> {
         let mut symbol_orders = Vec::new();
         for entry in self.user_orders.iter() {
             for order in entry.value().iter() {
-                if order.symbol == symbol
-                    && matches!(order.status, OrderStatus::Open | OrderStatus::Partial)
-                {
+                if order.symbol == symbol && order.is_active() {
                     symbol_orders.push(order_to_ui(order));
                 }
             }
@@ -107,19 +108,21 @@ impl OrdersService {
     }
 
     /// Get order count for a user
+    #[allow(dead_code)] // API method for user stats
     pub fn get_user_order_count(&self, user_id: UserId) -> usize {
         self.user_orders
             .get(&user_id)
             .map(|orders| {
                 orders
                     .iter()
-                    .filter(|o| matches!(o.status, OrderStatus::Open | OrderStatus::Partial))
+                    .filter(|o| o.is_active())
                     .count()
             })
             .unwrap_or(0)
     }
 
     /// Clear all orders for a user (used when user disconnects or for reset)
+    #[allow(dead_code)] // API method for session cleanup
     pub fn clear_user_orders(&self, user_id: UserId) {
         if let Some((_, orders)) = self.user_orders.remove(&user_id) {
             for order in orders {
@@ -135,6 +138,7 @@ impl OrdersService {
     }
 
     /// Check if an order exists
+    #[allow(dead_code)] // API method for order validation
     pub fn order_exists(&self, order_id: OrderId) -> bool {
         self.order_index.contains_key(&order_id)
     }
@@ -161,7 +165,7 @@ impl OrdersService {
             let user_name = user_names.get(&user_id).cloned().unwrap_or_else(|| format!("User#{}", user_id));
 
             for order in entry.value().iter() {
-                if !matches!(order.status, OrderStatus::Open | OrderStatus::Partial) {
+                if !order.is_active() {
                     continue;
                 }
                 if let Some(sym) = symbol_filter {
@@ -178,7 +182,7 @@ impl OrdersService {
                     order_type: order.order_type,
                     qty: order.qty,
                     filled_qty: order.filled_qty,
-                    remaining_qty: order.qty - order.filled_qty,
+                    remaining_qty: order.remaining_qty(),
                     price: order.price,
                     status: order.status,
                     timestamp: order.timestamp,
@@ -197,7 +201,7 @@ impl OrdersService {
         for entry in self.user_orders.iter() {
             count += entry.value()
                 .iter()
-                .filter(|o| matches!(o.status, OrderStatus::Open | OrderStatus::Partial))
+                .filter(|o| o.is_active())
                 .count();
         }
         count
@@ -213,7 +217,7 @@ fn order_to_ui(order: &Order) -> OpenOrderUI {
         order_type: order.order_type,
         qty: order.qty,
         filled_qty: order.filled_qty,
-        remaining_qty: order.qty - order.filled_qty,
+        remaining_qty: order.remaining_qty(),
         price: order.price,
         status: order.status,
         timestamp: order.timestamp,

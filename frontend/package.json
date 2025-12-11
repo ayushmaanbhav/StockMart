@@ -7,7 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report test-results/html-report",
+    "test:parallel": "playwright test --workers=8",
+    "test:auth": "playwright test tests/e2e/auth/",
+    "test:trading": "playwright test tests/e2e/trading/",
+    "test:admin": "playwright test tests/e2e/admin/",
+    "test:sync": "playwright test tests/e2e/sync/",
+    "test:multi-user": "playwright test --project=multi-user"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -21,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
@@ -31,6 +43,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "playwright": "^1.57.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",

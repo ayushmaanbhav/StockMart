@@ -2,7 +2,7 @@
 // Input Component
 // ============================================
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -20,7 +20,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     id,
     ...props
 }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    // Use React's useId hook for stable, SSR-safe ID generation
+    const generatedId = useId();
+    const inputId = id || `input-${generatedId}`;
     const hasIcon = Boolean(icon);
     const hasError = Boolean(error);
 

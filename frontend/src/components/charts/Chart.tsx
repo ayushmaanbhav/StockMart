@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
-import type { IChartApi, ISeriesApi, CandlestickData } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, CandlestickData, UTCTimestamp } from 'lightweight-charts';
 import { useGameStore } from '../../store/gameStore';
 
 export const Chart = () => {
@@ -25,7 +25,7 @@ export const Chart = () => {
             height: 400,
         });
 
-        const newSeries = (chart as any).addCandlestickSeries({
+        const newSeries = chart.addCandlestickSeries({
             upColor: '#22c55e',
             downColor: '#ef4444',
             borderVisible: false,
@@ -57,8 +57,8 @@ export const Chart = () => {
 
             // Convert to lightweight-charts format
             // gameStore already scales prices, timestamps are in ms, convert to seconds
-            const data: CandlestickData[] = sortedCandles.map(c => ({
-                time: Math.floor(c.timestamp / 1000) as any, // Convert ms to seconds
+            const data: CandlestickData<UTCTimestamp>[] = sortedCandles.map(c => ({
+                time: Math.floor(c.timestamp / 1000) as UTCTimestamp,
                 open: c.open,
                 high: c.high,
                 low: c.low,
