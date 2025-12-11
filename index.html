@@ -1,140 +1,735 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMart - Real-time Stock Trading Game</title>
+    <meta name="description" content="Trade. Compete. Learn. Dominate the leaderboard in the ultimate multiplayer stock trading game.">
+    <meta name="keywords" content="stock trading game, trading simulator, multiplayer trading, virtual stock exchange, finance game, trading competition">
+    <meta property="og:title" content="StockMart - Real-time Stock Trading Game">
+    <meta property="og:description" content="Trade. Compete. Learn. Dominate the leaderboard!">
+    <meta property="og:image" content="screenshots/trading-desk.png">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --accent-green: #00ff88;
+            --accent-blue: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-red: #ff4757;
+            --accent-gold: #ffd700;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --gradient-main: linear-gradient(135deg, #00ff88 0%, #00d4ff 50%, #a855f7 100%);
+            --gradient-gold: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            --glow-green: 0 0 30px rgba(0, 255, 136, 0.3);
+            --glow-blue: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <title>StockMart by ayushmaanbhav</title>
-  </head>
+        html {
+            scroll-behavior: smooth;
+        }
 
-  <body>
-    <header>
-      <div class="inner">
-        <h1>StockMart</h1>
-        <h2>A Java based multiplayer Virtual Stock Exchange Game (VSE)</h2>
-        <a href="https://github.com/ayushmaanbhav/stockmart" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h2>
-<a id="description" class="anchor" href="#description" aria-hidden="true"><span class="octicon octicon-link"></span></a>Description:</h2>
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+        }
 
-<p>I developed the application in two parts, a client applet which interacts with a server application via TCP. The features of the client applet include live ranking, chat discussion, news items, company stocks and their market values, the status of share market and sensex. The features of the admin application (server) include live view of the users, their details, stocks and money, set news items, set time limit, block chat, delete user, view rankings, chat discussion and edit stock prices.</p>
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
 
-<h2>
-<a id="features-and-improvements-branch-real-bid" class="anchor" href="#features-and-improvements-branch-real-bid" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features and Improvements (Branch: real-bid):</h2>
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--accent-green);
+            top: -200px;
+            right: -200px;
+        }
 
-<p>Introduced real bidding whereas the code in the master branch operates on Monte Carlo simulation and there is no real bidding. Introduced many new features like bid graphs and order queue graphs !!! Fixed many bugs.... Developed a matching engine for matching orders or bids..... Improved code structure....</p>
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-purple);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -10s;
+        }
 
-<h2>
-<a id="guidelines" class="anchor" href="#guidelines" aria-hidden="true"><span class="octicon octicon-link"></span></a>Guidelines</h2>
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent-blue);
+            top: 50%;
+            left: 50%;
+            animation-delay: -5s;
+        }
 
-<h3>
-<a id="server" class="anchor" href="#server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server</h3>
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, 50px) scale(1.1); }
+            50% { transform: translate(0, 100px) scale(0.9); }
+            75% { transform: translate(-50px, 50px) scale(1.05); }
+        }
 
-<ul>
-<li>money.txt: specify user's initial money. user will get that money and some random shares of the same value.<br>
-</li>
-<li>companies.txt: specify the companies and their initial share value just after their name, separated by a ":", ignore rest of the values. eg:<br>
-"Reliance:260"<br>
-(one company per line)<br>
-</li>
-<li>reg.txt: if only user with allotted regnos are to be able to play then specify the registration nos in this file, (only small chars and numbers), you can disable the regno. checking by clicking on the button "CheckREG" on the main screen.<br>
-</li>
-<li>Start server by double clicking it, set the time limit, wait for the users to connect, finally start the server by clicking the start button...<br>
-</li>
-<li>You can add spice to the game by using the text area below to show news to the users. "ONE NEWS ITEM PER LINE". News about companies to fluctuate the prices. :) Eg. of a positive news:<br>
-"Microsoft announces Windows 10. This new version will thrill the users."<br>
-</li>
-<li>You can view users in the user panel, increase their money, give them bonus, increase their chat, change their pass, ban and delete them, view their stocks and orders... etc<br>
-</li>
-<li>You can view the pending orders in the order queue and manually cancel them if necessary or u face any problem.</li>
-</ul>
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
 
-<h3>
-<a id="client" class="anchor" href="#client" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client:</h3>
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
 
-<ul>
-<li>Start client by cmd prompt or terminal by giving ip of the server as the first argument eg:<br>
-"java -jar StockMartClient.jar -localhost"<br>
-</li>
-<li>Register (each field is restricted to use only small chars and nos.), login and start playing.</li>
-</ul>
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
 
-<h2>
-<a id="screenshots" class="anchor" href="#screenshots" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screenshots:</h2>
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
 
-<h3>
-<a id="server-1" class="anchor" href="#server-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server:</h3>
+        .nav-links a:hover {
+            color: var(--accent-green);
+        }
 
-<p><img src="https://cloud.githubusercontent.com/assets/4680789/6806859/49115ab2-d271-11e4-825e-41dfd4e2e7f8.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806858/48f789b6-d271-11e4-97ab-c82c5c968cba.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806861/4943f0a8-d271-11e4-8420-e7d70787b33d.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806860/491cf318-d271-11e4-8838-d64e31166f01.PNG"></p>
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
 
-<h3>
-<a id="client-1" class="anchor" href="#client-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client:</h3>
+        .btn-primary {
+            background: var(--gradient-main);
+            color: var(--bg-primary);
+        }
 
-<p><img src="https://cloud.githubusercontent.com/assets/4680789/6806856/486c49fa-d271-11e4-8a67-67826f90efe5.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806853/485f95e8-d271-11e4-95fb-c4f9beb67c29.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806854/48645f4c-d271-11e4-9c73-1d42545a5c93.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806855/486b8c9a-d271-11e4-94a5-20b15fef0a76.PNG">
-<img src="https://cloud.githubusercontent.com/assets/4680789/6806857/48c4131a-d271-11e4-8a39-da2d3f5a904d.PNG"></p>
-        </section>
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-green);
+        }
 
-        <aside id="sidebar">
-          <h2>Binaries:</h2>
-          <h3>Real Bidding:</h3>
-          <a href="https://github.com/ayushmaanbhav/stockmart/releases/download/v2.1-prod/StockMart.2.1.rar" class="button">
-            <small>Download</small>
-            .rar (v2.1)
-          </a>
-          <h3>Simulation Based:</h3>
-          <a href="https://github.com/ayushmaanbhav/stockmart/releases/download/v1.1-prod/stockmart-1.1-bin.rar" class="button">
-            <small>Download</small>
-            .rar (v1.1)
-          </a>
-          <h2>Sources:</h2>
-          <h3>Real Bidding:</h3>
-          <a href="https://github.com/ayushmaanbhav/stockmart/tarball/real-bid" class="button">
-            <small>Download</small>
-            .tar.gz
-          </a>
-          <h3>Simulation Based:</h3>
-          <a href="https://github.com/ayushmaanbhav/stockmart/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz
-          </a>
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
 
-          <p class="repo-owner"><a href="https://github.com/ayushmaanbhav/stockmart"></a> is maintained by <a href="https://github.com/ayushmaanbhav">ayushmaanbhav</a>.</p>
+        .btn-secondary:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
 
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-tagline {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .hero-cta-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+
+        .hero-cta-text span {
+            color: var(--accent-gold);
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 4rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .hero-image {
+            width: 100%;
+            max-width: 1200px;
+            border-radius: 16px;
+            box-shadow: 0 25px 80px rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: float-slow 6s ease-in-out infinite;
+        }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Sections */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 4rem;
+            font-size: 1.1rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 255, 136, 0.3);
+            box-shadow: var(--glow-green);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 212, 255, 0.2) 100%);
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+        }
+
+        /* Game Modes */
+        .game-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .mode-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .mode-card:hover {
+            border-color: var(--accent-purple);
+            transform: scale(1.02);
+        }
+
+        .mode-card h4 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .mode-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Screenshots Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.02);
+            border-color: var(--accent-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            display: block;
+        }
+
+        .gallery-item .caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .tech-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.5rem 2rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-3px);
+        }
+
+        .tech-item img {
+            width: 50px;
+            height: 50px;
+        }
+
+        .tech-item span {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 8rem 2rem;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            margin: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-main);
+        }
+
+        .cta-section h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        footer p {
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--accent-green);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-stats {
+                gap: 1.5rem;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+
+            section {
+                padding: 4rem 1rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+
+    <nav>
+        <a href="#" class="logo">STOCKMART</a>
+        <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#modes">Game Modes</a></li>
+            <li><a href="#screenshots">Screenshots</a></li>
+            <li><a href="#tech">Tech Stack</a></li>
+        </ul>
+        <a href="https://github.com/ayushmaanbhav/stockmart" class="btn btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            GitHub
+        </a>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">
+            <span>NEW</span> v3.0 - Built with Rust & React
+        </div>
+        <h1>STOCKMART</h1>
+        <p class="hero-tagline">Real-time Stock Trading Game & Simulation Platform</p>
+        <p class="hero-cta-text">Trade. Compete. Learn. <span>Dominate the leaderboard!</span></p>
+
+        <div class="hero-buttons">
+            <a href="https://github.com/ayushmaanbhav/stockmart#quick-start" class="btn btn-primary">
+                Start Trading Now
+            </a>
+            <a href="https://github.com/ayushmaanbhav/stockmart" class="btn btn-secondary">
+                View on GitHub
+            </a>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-value">$100K</div>
+                <div class="stat-label">Starting Virtual Cash</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">10+</div>
+                <div class="stat-label">Tradable Stocks</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">599+</div>
+                <div class="stat-label">Tests Passed</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">85%</div>
+                <div class="stat-label">Code Coverage</div>
+            </div>
+        </div>
+
+        <img src="screenshots/trading-desk.png" alt="StockMart Trading Desk" class="hero-image">
+    </section>
+
+    <section id="features">
+        <h2 class="section-title">Why StockMart?</h2>
+        <p class="section-subtitle">A multiplayer stock trading game with real market mechanics</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4CA;</div>
+                <h3>Real-time Charts</h3>
+                <p>Professional candlestick charts with live price updates powered by TradingView technology.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x26A1;</div>
+                <h3>Instant Execution</h3>
+                <p>WebSocket-powered trades execute in milliseconds. See your orders fill instantly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F3C6;</div>
+                <h3>Live Leaderboard</h3>
+                <p>Compete for the top spot. Watch rankings update in real-time as traders battle.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4AC;</div>
+                <h3>Global Chat</h3>
+                <p>Trash talk your opponents or share tips. Real-time chat with all traders.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4B0;</div>
+                <h3>Risk-Free Trading</h3>
+                <p>Start with $100K virtual cash. Learn without losing real money.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F3AE;</div>
+                <h3>Game Master Controls</h3>
+                <p>Admins can run competitions, set time limits, and control market sessions.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="modes">
+        <h2 class="section-title">Game Modes</h2>
+        <p class="section-subtitle">Multiple ways to play and compete</p>
+
+        <div class="game-modes">
+            <div class="mode-card">
+                <h4>FREE PLAY</h4>
+                <p>Trade at your own pace, build your portfolio</p>
+            </div>
+            <div class="mode-card">
+                <h4>SPEED TRADING</h4>
+                <p>15-30 minute intense trading blitzes</p>
+            </div>
+            <div class="mode-card">
+                <h4>TOURNAMENT</h4>
+                <p>Multi-round elimination competitions</p>
+            </div>
+            <div class="mode-card">
+                <h4>TEAM BATTLE</h4>
+                <p>Groups compete for combined net worth</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="screenshots">
+        <h2 class="section-title">Screenshots</h2>
+        <p class="section-subtitle">See StockMart in action</p>
+
+        <div class="gallery">
+            <div class="gallery-item">
+                <img src="screenshots/trading-desk.png" alt="Trading Desk">
+                <div class="caption">Trading Desk - Professional trading interface</div>
+            </div>
+            <div class="gallery-item">
+                <img src="screenshots/admin-dashboard.png" alt="Admin Dashboard">
+                <div class="caption">Admin Dashboard - Real-time market oversight</div>
+            </div>
+            <div class="gallery-item">
+                <img src="screenshots/admin-game-control.png" alt="Game Control">
+                <div class="caption">Game Control - Configure competitions</div>
+            </div>
+            <div class="gallery-item">
+                <img src="screenshots/admin-traders.png" alt="Trader Management">
+                <div class="caption">Trader Management - Monitor all players</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tech">
+        <h2 class="section-title">Built With</h2>
+        <p class="section-subtitle">Modern, production-grade technology stack</p>
+
+        <div class="tech-stack">
+            <div class="tech-item">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg" alt="Rust">
+                <span>Rust</span>
+            </div>
+            <div class="tech-item">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React">
+                <span>React 19</span>
+            </div>
+            <div class="tech-item">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript">
+                <span>TypeScript</span>
+            </div>
+            <div class="tech-item">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg" alt="TailwindCSS">
+                <span>TailwindCSS</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="cta-section">
+        <h2>Ready to Trade?</h2>
+        <p>Clone the repo, start the servers, and dominate the leaderboard!</p>
+        <a href="https://github.com/ayushmaanbhav/stockmart#quick-start" class="btn btn-primary">
+            Get Started Now
+        </a>
     </div>
 
-            <script type="text/javascript">
-            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-          </script>
-          <script type="text/javascript">
-            try {
-              var pageTracker = _gat._getTracker("UA-61113017-1");
-            pageTracker._trackPageview();
-            } catch(err) {}
-          </script>
-
-  </body>
+    <footer>
+        <p>
+            Made with &#x2764; by <a href="https://github.com/ayushmaanbhav">ayushmaanbhav</a> |
+            <a href="https://github.com/ayushmaanbhav/stockmart">GitHub</a> |
+            Apache 2.0 License
+        </p>
+    </footer>
+</body>
 </html>
