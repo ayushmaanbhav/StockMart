@@ -38,7 +38,7 @@ github:
 # Supports up to 4 custom URLs for platforms not listed above
 custom:
   # UPI Payment (India) - Direct bank transfer via UPI
-  - "upi://pay?pa=8544130924@pthdfc&pn=ayushmaanbhav&cu=INR"
+  - "upi://pay?pa=8544130924@pthdfc&pn=Ayush%20Jain&cu=INR"
   # Alternative UPI link format for broader compatibility
   # - https://upi.link/8544130924@pthdfc
   # Buy Me a Coffee (uncomment if you have an account)
