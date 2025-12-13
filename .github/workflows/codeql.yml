@@ -1,0 +1,31 @@
+name: CodeQL Analysis
+
+on:
+  push:
+    branches: [main, real-bid, real-bid-rust]
+  pull_request:
+    branches: [main, real-bid, real-bid-rust]
+  schedule:
+    - cron: '0 6 * * 1'  # Run every Monday at 6am UTC
+
+jobs:
+  analyze-javascript:
+    name: Analyze JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

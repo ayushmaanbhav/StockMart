@@ -1,0 +1,58 @@
+name: Question
+description: Ask a question about StockMart setup, usage, or development
+title: "[Question]: "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? We're happy to help! Consider checking our documentation first.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What is your question about?
+      options:
+        - Setup / Installation
+        - Configuration
+        - Trading Features
+        - Admin Features
+        - Development / Contributing
+        - Architecture / Design
+        - Deployment / Hosting
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Please describe your question in detail
+      placeholder: What would you like to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide any relevant context that might help us answer your question
+      placeholder: |
+        - What are you trying to accomplish?
+        - What have you tried so far?
+        - Any relevant configuration or environment details?
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: I have searched for answers
+      description: Please confirm
+      options:
+        - label: I have searched the documentation
+          required: true
+        - label: I have searched existing issues and discussions
+          required: true

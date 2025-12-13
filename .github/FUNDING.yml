@@ -1,0 +1,47 @@
+# GitHub Sponsors configuration for StockMart
+# Enables the "Sponsor" button on the repository
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# GitHub Sponsors - Primary funding platform
+# Supports one-time and recurring donations directly through GitHub
+github:
+  - ayushmaanbhav
+
+# Patreon - Membership platform for creators
+# patreon: ayushmaanbhav
+
+# Open Collective - Transparent funding for open source
+# open_collective: stockmart
+
+# Ko-fi - Support creators with one-time donations
+# ko_fi: ayushmaanbhav
+
+# Liberapay - Recurrent donations platform
+# liberapay: ayushmaanbhav
+
+# IssueHunt - Fund specific issues and feature requests
+# issuehunt: ayushmaanbhav
+
+# Polar - Modern funding for open source maintainers
+# polar: ayushmaanbhav
+
+# LFX Crowdfunding (Linux Foundation) - Enterprise-grade funding
+# lfx_crowdfunding: stockmart
+
+# Tidelift - Enterprise subscriptions for open source
+# tidelift: npm/stockmart
+
+# Buy Me a Coffee - One-time support (via custom URL)
+# Uncomment and add your Buy Me a Coffee username below
+
+# Custom sponsorship URLs
+# Supports up to 4 custom URLs for platforms not listed above
+custom:
+  # UPI Payment (India) - Direct bank transfer via UPI
+  - "upi://pay?pa=8544130924@pthdfc&pn=ayushmaanbhav&cu=INR"
+  # Alternative UPI link format for broader compatibility
+  # - https://upi.link/8544130924@pthdfc
+  # Buy Me a Coffee (uncomment if you have an account)
+  # - https://www.buymeacoffee.com/ayushmaanbhav
+  # PayPal (uncomment if you have an account)
+  # - https://paypal.me/ayushmaanbhav

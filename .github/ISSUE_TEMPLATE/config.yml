@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/ayushmaanbhav/stockmart/tree/main/docs
+    about: Check out our documentation for setup guides and architecture details
+  - name: Discussions
+    url: https://github.com/ayushmaanbhav/stockmart/discussions
+    about: Ask questions and discuss ideas in GitHub Discussions
+  - name: Security Vulnerabilities
+    url: https://github.com/ayushmaanbhav/stockmart/security/advisories/new
+    about: Report security vulnerabilities privately
