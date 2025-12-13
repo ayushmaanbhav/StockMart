@@ -7,12 +7,11 @@ use std::sync::Arc;
 use tracing::debug;
 
 use crate::api::ws::AppState;
-use crate::domain::models::User;
 use crate::domain::error::UserError;
+use crate::domain::models::User;
 use crate::domain::ui_models::{
-    CandleUI, CompanyUI, FullStateSyncPayload,
-    NewsItemUI, OrderbookLevelUI, OrderbookUI, PortfolioItemUI,
-    PortfolioStateUI,
+    CandleUI, CompanyUI, FullStateSyncPayload, NewsItemUI, OrderbookLevelUI, OrderbookUI,
+    PortfolioItemUI, PortfolioStateUI,
 };
 use crate::infrastructure::id_generator::IdGenerators;
 use crate::presentation::websocket::messages::ServerMessage;
@@ -32,7 +31,13 @@ pub async fn handle_request_sync(
 
     match component.as_deref() {
         None => {
-            send_full_state_sync(sender, state, user_id, subscribed_symbols.first().map(|s| s.as_str())).await;
+            send_full_state_sync(
+                sender,
+                state,
+                user_id,
+                subscribed_symbols.first().map(|s| s.as_str()),
+            )
+            .await;
         }
         Some("portfolio") => {
             sync_portfolio(sender, state, user_id, sync_id).await;
@@ -51,14 +56,19 @@ pub async fn handle_request_sync(
             send_message(sender, &msg).await;
         }
         Some("news") => {
-            let news = state.news.get_recent(20).into_iter().map(|n| NewsItemUI {
-                id: n.id.clone(),
-                headline: n.headline.clone(),
-                symbol: n.symbol.clone(),
-                sentiment: n.sentiment.clone(),
-                impact: n.impact.clone(),
-                timestamp: n.timestamp,
-            }).collect();
+            let news = state
+                .news
+                .get_recent(20)
+                .into_iter()
+                .map(|n| NewsItemUI {
+                    id: n.id.clone(),
+                    headline: n.headline.clone(),
+                    symbol: n.symbol.clone(),
+                    sentiment: n.sentiment.clone(),
+                    impact: n.impact.clone(),
+                    timestamp: n.timestamp,
+                })
+                .collect();
             let msg = ServerMessage::NewsSync { sync_id, news };
             send_message(sender, &msg).await;
         }
@@ -157,14 +167,30 @@ async fn sync_orderbook(
 
         let orderbook = OrderbookUI {
             symbol: symbol.to_string(),
-            bids: bids.into_iter().scan(0u64, |cum, (price, qty)| {
-                *cum += qty;
-                Some(OrderbookLevelUI { price, qty, order_count: 1, cumulative_qty: *cum })
-            }).collect(),
-            asks: asks.into_iter().scan(0u64, |cum, (price, qty)| {
-                *cum += qty;
-                Some(OrderbookLevelUI { price, qty, order_count: 1, cumulative_qty: *cum })
-            }).collect(),
+            bids: bids
+                .into_iter()
+                .scan(0u64, |cum, (price, qty)| {
+                    *cum += qty;
+                    Some(OrderbookLevelUI {
+                        price,
+                        qty,
+                        order_count: 1,
+                        cumulative_qty: *cum,
+                    })
+                })
+                .collect(),
+            asks: asks
+                .into_iter()
+                .scan(0u64, |cum, (price, qty)| {
+                    *cum += qty;
+                    Some(OrderbookLevelUI {
+                        price,
+                        qty,
+                        order_count: 1,
+                        cumulative_qty: *cum,
+                    })
+                })
+                .collect(),
             spread,
             spread_percent,
             last_price,
@@ -185,14 +211,19 @@ async fn sync_candles(
     symbol: &str,
     sync_id: u64,
 ) {
-    let candles: Vec<CandleUI> = state.market.get_candles(symbol).into_iter().map(|c| CandleUI {
-        timestamp: c.timestamp,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-        volume: c.volume,
-    }).collect();
+    let candles: Vec<CandleUI> = state
+        .market
+        .get_candles(symbol)
+        .into_iter()
+        .map(|c| CandleUI {
+            timestamp: c.timestamp,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect();
     let msg = ServerMessage::CandlesSync {
         sync_id,
         symbol: symbol.to_string(),
@@ -239,34 +270,38 @@ pub async fn send_full_state_sync(
 
     // Companies with current prices
     let companies: Vec<CompanyUI> = if let Ok(companies) = state.company_repo.all().await {
-        companies.iter().map(|c| {
-            let candles = state.market.get_candles(&c.symbol);
-            let (current_price, price_change, price_change_percent) = if let Some(last) = candles.last() {
-                let current = last.close;
-                let first = candles.first().map(|c| c.open).unwrap_or(current);
-                let change = current - first;
-                let change_pct = if first != 0 {
-                    (change as f64 / first as f64) * 100.0
-                } else {
-                    0.0
-                };
-                (Some(current), Some(change), Some(change_pct))
-            } else {
-                (None, None, None)
-            };
+        companies
+            .iter()
+            .map(|c| {
+                let candles = state.market.get_candles(&c.symbol);
+                let (current_price, price_change, price_change_percent) =
+                    if let Some(last) = candles.last() {
+                        let current = last.close;
+                        let first = candles.first().map(|c| c.open).unwrap_or(current);
+                        let change = current - first;
+                        let change_pct = if first != 0 {
+                            (change as f64 / first as f64) * 100.0
+                        } else {
+                            0.0
+                        };
+                        (Some(current), Some(change), Some(change_pct))
+                    } else {
+                        (None, None, None)
+                    };
 
-            CompanyUI {
-                id: c.id,
-                symbol: c.symbol.clone(),
-                name: c.name.clone(),
-                sector: c.sector.clone(),
-                current_price,
-                price_change,
-                price_change_percent,
-                volume: candles.iter().map(|c| c.volume).sum(),
-                bankrupt: c.bankrupt,
-            }
-        }).collect()
+                CompanyUI {
+                    id: c.id,
+                    symbol: c.symbol.clone(),
+                    name: c.name.clone(),
+                    sector: c.sector.clone(),
+                    current_price,
+                    price_change,
+                    price_change_percent,
+                    volume: candles.iter().map(|c| c.volume).sum(),
+                    bankrupt: c.bankrupt,
+                }
+            })
+            .collect()
     } else {
         vec![]
     };
@@ -274,7 +309,9 @@ pub async fn send_full_state_sync(
     // User-specific state
     let (portfolio, open_orders) = if let Some(uid) = user_id {
         let user = state.user_repo.find_by_id(uid).await.ok().flatten();
-        let portfolio = user.as_ref().map(|u| compute_portfolio_ui(u, &state.market));
+        let portfolio = user
+            .as_ref()
+            .map(|u| compute_portfolio_ui(u, &state.market));
         let orders = state.orders.get_user_orders(uid);
         (portfolio, orders)
     } else {
@@ -284,58 +321,87 @@ pub async fn send_full_state_sync(
     // Market data
     let indices = state.indices.get_all_indices();
     let leaderboard = state.leaderboard.get_current();
-    let news = state.news.get_recent(20).into_iter().map(|n| NewsItemUI {
-        id: n.id.clone(),
-        headline: n.headline.clone(),
-        symbol: n.symbol.clone(),
-        sentiment: n.sentiment.clone(),
-        impact: n.impact.clone(),
-        timestamp: n.timestamp,
-    }).collect();
+    let news = state
+        .news
+        .get_recent(20)
+        .into_iter()
+        .map(|n| NewsItemUI {
+            id: n.id.clone(),
+            headline: n.headline.clone(),
+            symbol: n.symbol.clone(),
+            sentiment: n.sentiment.clone(),
+            impact: n.impact.clone(),
+            timestamp: n.timestamp,
+        })
+        .collect();
     let chat_history = state.chat.get_recent(50);
 
     // Symbol-specific data
     let (orderbook, candles, recent_trades) = if let Some(sym) = active_symbol {
-        let ob = state.engine.get_order_book_depth(sym, 10).map(|(bids, asks)| {
-            let spread = match (bids.first(), asks.first()) {
-                (Some((bid_price, _)), Some((ask_price, _))) => Some(ask_price - bid_price),
-                _ => None,
-            };
-            let spread_percent = spread.and_then(|s| {
-                bids.first().map(|(bid_price, _)| {
-                    if *bid_price != 0 {
-                        (s as f64 / *bid_price as f64) * 100.0
-                    } else {
-                        0.0
-                    }
-                })
-            });
-            let last_price = state.market.get_last_price(sym);
+        let ob = state
+            .engine
+            .get_order_book_depth(sym, 10)
+            .map(|(bids, asks)| {
+                let spread = match (bids.first(), asks.first()) {
+                    (Some((bid_price, _)), Some((ask_price, _))) => Some(ask_price - bid_price),
+                    _ => None,
+                };
+                let spread_percent = spread.and_then(|s| {
+                    bids.first().map(|(bid_price, _)| {
+                        if *bid_price != 0 {
+                            (s as f64 / *bid_price as f64) * 100.0
+                        } else {
+                            0.0
+                        }
+                    })
+                });
+                let last_price = state.market.get_last_price(sym);
 
-            OrderbookUI {
-                symbol: sym.to_string(),
-                bids: bids.into_iter().scan(0u64, |cum, (price, qty)| {
-                    *cum += qty;
-                    Some(OrderbookLevelUI { price, qty, order_count: 1, cumulative_qty: *cum })
-                }).collect(),
-                asks: asks.into_iter().scan(0u64, |cum, (price, qty)| {
-                    *cum += qty;
-                    Some(OrderbookLevelUI { price, qty, order_count: 1, cumulative_qty: *cum })
-                }).collect(),
-                spread,
-                spread_percent,
-                last_price,
-                timestamp,
-            }
-        });
-        let candles_data: Vec<CandleUI> = state.market.get_candles(sym).into_iter().map(|c| CandleUI {
-            timestamp: c.timestamp,
-            open: c.open,
-            high: c.high,
-            low: c.low,
-            close: c.close,
-            volume: c.volume,
-        }).collect();
+                OrderbookUI {
+                    symbol: sym.to_string(),
+                    bids: bids
+                        .into_iter()
+                        .scan(0u64, |cum, (price, qty)| {
+                            *cum += qty;
+                            Some(OrderbookLevelUI {
+                                price,
+                                qty,
+                                order_count: 1,
+                                cumulative_qty: *cum,
+                            })
+                        })
+                        .collect(),
+                    asks: asks
+                        .into_iter()
+                        .scan(0u64, |cum, (price, qty)| {
+                            *cum += qty;
+                            Some(OrderbookLevelUI {
+                                price,
+                                qty,
+                                order_count: 1,
+                                cumulative_qty: *cum,
+                            })
+                        })
+                        .collect(),
+                    spread,
+                    spread_percent,
+                    last_price,
+                    timestamp,
+                }
+            });
+        let candles_data: Vec<CandleUI> = state
+            .market
+            .get_candles(sym)
+            .into_iter()
+            .map(|c| CandleUI {
+                timestamp: c.timestamp,
+                open: c.open,
+                high: c.high,
+                low: c.low,
+                close: c.close,
+                volume: c.volume,
+            })
+            .collect();
         let trades = state.trade_history.get_symbol_trades(sym, 50);
         (ob, Some(candles_data), trades)
     } else {
@@ -371,7 +437,8 @@ pub fn compute_portfolio_ui(user: &User, market: &MarketService) -> PortfolioSta
     let mut portfolio_value: i64 = 0;
 
     for item in &user.portfolio {
-        let current_price = market.get_last_price(&item.symbol)
+        let current_price = market
+            .get_last_price(&item.symbol)
             .unwrap_or(item.average_buy_price);
 
         let market_value = (item.qty as i64) * current_price;

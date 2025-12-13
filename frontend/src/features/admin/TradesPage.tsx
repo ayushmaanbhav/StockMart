@@ -16,6 +16,18 @@ import { useConfigStore } from '../../store/configStore';
 import { useAdminStore } from '../../store/adminStore';
 import { Button, Badge } from '../../components/common';
 
+// Sort icon component - defined outside to avoid recreation during render
+interface TradeSortIconProps {
+    field: string;
+    sortField: string;
+    sortOrder: 'asc' | 'desc';
+}
+
+const TradeSortIcon: React.FC<TradeSortIconProps> = ({ field, sortField, sortOrder }) => {
+    if (sortField !== field) return null;
+    return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+};
+
 export const TradesPage: React.FC = () => {
     const { companies } = useGameStore();
     const formatCurrency = useConfigStore(state => state.formatCurrency);
@@ -72,11 +84,6 @@ export const TradesPage: React.FC = () => {
             setSortField(field);
             setSortOrder('desc');
         }
-    };
-
-    const SortIcon: React.FC<{ field: string }> = ({ field }) => {
-        if (sortField !== field) return null;
-        return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
     };
 
     const formatTime = (timestamp: number) => {
@@ -171,26 +178,26 @@ export const TradesPage: React.FC = () => {
                                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('timestamp')}>
                                     <div className="flex items-center gap-1">
                                         Time
-                                        <SortIcon field="timestamp" />
+                                        <TradeSortIcon field="timestamp" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('symbol')}>
                                     <div className="flex items-center gap-1">
                                         Symbol
-                                        <SortIcon field="symbol" />
+                                        <TradeSortIcon field="symbol" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th>Type</th>
                                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('qty')}>
                                     <div className="flex items-center gap-1">
                                         Qty
-                                        <SortIcon field="qty" />
+                                        <TradeSortIcon field="qty" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('price')}>
                                     <div className="flex items-center gap-1">
                                         Price
-                                        <SortIcon field="price" />
+                                        <TradeSortIcon field="price" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th>Total</th>

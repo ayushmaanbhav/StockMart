@@ -70,16 +70,15 @@ const ConnectionMonitor: React.FC<{ serverUptime: number }> = ({ serverUptime })
     const { isConnected } = useGameStore();
     const [connectionHistory, setConnectionHistory] = useState<Array<{time: Date, connected: boolean}>>([]);
     const [latency, setLatency] = useState<number>(0);
+    const pingTimeRef = React.useRef<number>(0);
 
     useEffect(() => {
         // Measure actual WebSocket round-trip latency using ping/pong
-        let pingTime = 0;
-
         const handlePong = () => {
-            if (pingTime > 0) {
-                const roundTrip = Date.now() - pingTime;
+            if (pingTimeRef.current > 0) {
+                const roundTrip = Date.now() - pingTimeRef.current;
                 setLatency(roundTrip);
-                pingTime = 0;
+                pingTimeRef.current = 0;
             }
         };
 
@@ -89,7 +88,7 @@ const ConnectionMonitor: React.FC<{ serverUptime: number }> = ({ serverUptime })
         // Send periodic pings to measure latency
         const interval = setInterval(() => {
             if (isConnected) {
-                pingTime = Date.now();
+                pingTimeRef.current = Date.now();
                 websocketService.send({ type: 'Ping', payload: {} });
             }
         }, 3000);
@@ -100,11 +99,19 @@ const ConnectionMonitor: React.FC<{ serverUptime: number }> = ({ serverUptime })
         };
     }, [isConnected]);
 
+    // Track connection state changes
+    const prevConnectedRef = React.useRef<boolean | null>(null);
     useEffect(() => {
-        setConnectionHistory(prev => [
-            ...prev.slice(-19),
-            { time: new Date(), connected: isConnected }
-        ]);
+        if (prevConnectedRef.current !== null && prevConnectedRef.current !== isConnected) {
+            // Connection state changed, update history in a microtask to avoid sync setState
+            queueMicrotask(() => {
+                setConnectionHistory(prev => [
+                    ...prev.slice(-19),
+                    { time: new Date(), connected: isConnected }
+                ]);
+            });
+        }
+        prevConnectedRef.current = isConnected;
     }, [isConnected]);
 
     const formatUptime = (seconds: number) => {
@@ -189,10 +196,16 @@ interface MessageThroughputProps {
 const MessageThroughput: React.FC<MessageThroughputProps> = ({ totalTrades, recentVolume, openOrdersCount }) => {
     const { chatMessages } = useGameStore();
     const formatCurrency = useConfigStore(state => state.formatCurrency);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+    // Update current time periodically for chat message filtering
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Count chat messages from last 60 seconds
-    const now = Date.now();
-    const recentChat = chatMessages.filter(m => now - m.timestamp < 60000).length;
+    const recentChat = chatMessages.filter(m => currentTime - m.timestamp < 60000).length;
 
     return (
         <div className="panel">
@@ -277,8 +290,16 @@ const MessageThroughput: React.FC<MessageThroughputProps> = ({ totalTrades, rece
 // === Circuit Breaker Status ===
 const CircuitBreakerStatus: React.FC = () => {
     const { haltedSymbols } = useGameStore();
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+    // Update current time every second for countdown display
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     const activeHalts = Object.entries(haltedSymbols).filter(
-        ([, until]) => until > Date.now()
+        ([, until]) => until > currentTime
     );
 
     return (
@@ -301,7 +322,7 @@ const CircuitBreakerStatus: React.FC = () => {
                 ) : (
                     <div className="space-y-3">
                         {activeHalts.map(([symbol, until]) => {
-                            const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+                            const remaining = Math.max(0, Math.ceil((until - currentTime) / 1000));
                             return (
                                 <div
                                     key={symbol}
@@ -331,6 +352,14 @@ interface ActiveSessionsProps {
 }
 
 const ActiveSessions: React.FC<ActiveSessionsProps> = ({ sessions }) => {
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+    // Update current time periodically for "last activity" display
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="panel">
             <div className="panel-header">
@@ -363,7 +392,7 @@ const ActiveSessions: React.FC<ActiveSessionsProps> = ({ sessions }) => {
                                     {new Date(session.connected_at * 1000).toLocaleTimeString()}
                                 </td>
                                 <td className="text-right text-sm text-muted">
-                                    {Math.floor((Date.now() / 1000 - session.last_activity))}s ago
+                                    {Math.floor((currentTime / 1000 - session.last_activity))}s ago
                                 </td>
                                 <td className="text-right font-mono text-xs text-muted">
                                     #{session.session_id}
@@ -473,7 +502,8 @@ export const DiagnosticsPage: React.FC = () => {
 
     // Fetch metrics on mount and periodically
     useEffect(() => {
-        fetchMetrics();
+        // Use queueMicrotask to avoid synchronous setState in effect body
+        queueMicrotask(() => fetchMetrics());
 
         const interval = setInterval(fetchMetrics, 10000); // Refresh every 10 seconds
 

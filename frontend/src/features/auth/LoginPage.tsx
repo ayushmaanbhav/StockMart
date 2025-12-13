@@ -43,8 +43,11 @@ export const LoginPage: React.FC = () => {
     // Clear errors on mode change
     useEffect(() => {
         clearError();
-        setValidationErrors({});
-        setTouched({});
+        // Use queueMicrotask to avoid synchronous setState in effect body
+        queueMicrotask(() => {
+            setValidationErrors({});
+            setTouched({});
+        });
     }, [mode, clearError]);
 
     // Validate trader form

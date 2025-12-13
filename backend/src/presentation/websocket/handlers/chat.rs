@@ -6,9 +6,9 @@ use axum::extract::ws::{Message, WebSocket};
 use std::sync::Arc;
 
 use crate::api::ws::AppState;
-use crate::domain::models::ChatMessage;
-use crate::domain::error::UserError;
 use crate::domain::constants::chat::MAX_MESSAGE_LENGTH;
+use crate::domain::error::UserError;
+use crate::domain::models::ChatMessage;
 use crate::presentation::websocket::messages::ServerMessage;
 
 use super::send_message;
@@ -37,7 +37,7 @@ pub async fn handle_chat(
     if message.len() > MAX_MESSAGE_LENGTH {
         let msg = ServerMessage::error(
             "MESSAGE_TOO_LONG",
-            &format!("Message must be under {} characters", MAX_MESSAGE_LENGTH)
+            &format!("Message must be under {} characters", MAX_MESSAGE_LENGTH),
         );
         send_message(sender, &msg).await;
         return;

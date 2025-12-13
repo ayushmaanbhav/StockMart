@@ -4,19 +4,19 @@
 //! and dashboard metrics.
 
 use axum::extract::ws::{Message, WebSocket};
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::info;
 
 use crate::api::ws::AppState;
-use crate::domain::models::{PRICE_SCALE, OrderSide};
+use crate::domain::error::UserError;
+use crate::domain::models::{OrderSide, PRICE_SCALE};
 use crate::domain::ui_models::AdminDashboardMetrics;
 use crate::domain::user::AdminAction;
-use crate::domain::error::UserError;
 use crate::presentation::websocket::messages::ServerMessage;
 
-use super::send_message;
 use super::helpers::calculate_net_worth;
+use super::send_message;
 
 /// Handle admin actions
 pub async fn handle_admin_action(
@@ -30,7 +30,10 @@ pub async fn handle_admin_action(
     let admin_action = match AdminAction::from_str(action) {
         Some(a) => a,
         None => {
-            let msg = ServerMessage::error("UNKNOWN_ACTION", &format!("Unknown admin action: {}", action));
+            let msg = ServerMessage::error(
+                "UNKNOWN_ACTION",
+                &format!("Unknown admin action: {}", action),
+            );
             send_message(sender, &msg).await;
             return;
         }
@@ -50,21 +53,15 @@ pub async fn handle_admin_action(
                         AdminAction::CreateCompany | AdminAction::SetBankrupt => {
                             user.role.can_manage_companies()
                         }
-                        AdminAction::InitGame => {
-                            user.role.can_init_game()
-                        }
+                        AdminAction::InitGame => user.role.can_init_game(),
                         AdminAction::BanTrader | AdminAction::MuteTrader => {
                             user.role.can_manage_users()
                         }
-                        AdminAction::GetAllTrades => {
-                            user.role.can_view_all_trades()
-                        }
+                        AdminAction::GetAllTrades => user.role.can_view_all_trades(),
                         AdminAction::GetAllOpenOrders | AdminAction::GetOrderbook => {
                             user.role.can_view_all_orders()
                         }
-                        AdminAction::GetDashboardMetrics => {
-                            user.role.can_view_admin_dashboard()
-                        }
+                        AdminAction::GetDashboardMetrics => user.role.can_view_admin_dashboard(),
                     };
 
                     if !has_permission {
@@ -138,16 +135,22 @@ async fn handle_set_volatility(
 ) {
     if let (Some(symbol), Some(vol)) = (
         payload.get("symbol").and_then(|v| v.as_str()),
-        payload.get("volatility").and_then(|v| v.as_i64())
+        payload.get("volatility").and_then(|v| v.as_i64()),
     ) {
-        let old_vol = state.company_repo.find_by_symbol(symbol).await
-            .ok().flatten().map(|c| c.volatility).unwrap_or(0);
+        let old_vol = state
+            .company_repo
+            .find_by_symbol(symbol)
+            .await
+            .ok()
+            .flatten()
+            .map(|c| c.volatility)
+            .unwrap_or(0);
 
         match state.admin.set_company_volatility(symbol, vol).await {
             Ok(_) => {
                 state.event_log.log_volatility_changed(symbol, old_vol, vol);
                 let msg = ServerMessage::System {
-                    message: format!("Volatility for {} set to {}", symbol, vol)
+                    message: format!("Volatility for {} set to {}", symbol, vol),
                 };
                 send_message(sender, &msg).await;
             }
@@ -168,20 +171,26 @@ async fn handle_create_company(
         payload.get("symbol").and_then(|v| v.as_str()),
         payload.get("name").and_then(|v| v.as_str()),
         payload.get("sector").and_then(|v| v.as_str()),
-        payload.get("volatility").and_then(|v| v.as_i64())
+        payload.get("volatility").and_then(|v| v.as_i64()),
     ) {
-        match state.admin.create_company(
-            symbol.to_string(),
-            name.to_string(),
-            sector.to_string(),
-            vol
-        ).await {
+        match state
+            .admin
+            .create_company(
+                symbol.to_string(),
+                name.to_string(),
+                sector.to_string(),
+                vol,
+            )
+            .await
+        {
             Ok(_) => {
                 let initial_price = 100 * PRICE_SCALE;
-                state.event_log.log_company_created(symbol, name, sector, initial_price);
+                state
+                    .event_log
+                    .log_company_created(symbol, name, sector, initial_price);
 
                 let msg = ServerMessage::System {
-                    message: format!("Company {} ({}) created", symbol, name)
+                    message: format!("Company {} ({}) created", symbol, name),
                 };
                 send_message(sender, &msg).await;
             }
@@ -199,17 +208,23 @@ async fn handle_init_game(
     uid: u64,
     payload: &serde_json::Value,
 ) {
-    let starting_cash = payload.get("starting_cash")
+    let starting_cash = payload
+        .get("starting_cash")
         .and_then(|v| v.as_i64())
         .map(|v| v * PRICE_SCALE)
         .unwrap_or(100_000 * PRICE_SCALE);
-    let shares_per_trader = payload.get("shares_per_trader")
+    let shares_per_trader = payload
+        .get("shares_per_trader")
         .and_then(|v| v.as_u64())
         .unwrap_or(100);
 
     let num_traders = state.user_repo.all().await.map(|u| u.len()).unwrap_or(0);
 
-    match state.admin.init_game(starting_cash, shares_per_trader).await {
+    match state
+        .admin
+        .init_game(starting_cash, shares_per_trader)
+        .await
+    {
         Ok(summary) => {
             info!("Admin {} initialized game: {}", uid, summary);
 
@@ -246,7 +261,7 @@ async fn handle_set_bankrupt(
             Ok(_) => {
                 state.event_log.log_company_bankrupt(symbol);
                 let msg = ServerMessage::System {
-                    message: format!("Company {} marked as bankrupt", symbol)
+                    message: format!("Company {} marked as bankrupt", symbol),
                 };
                 send_message(sender, &msg).await;
             }
@@ -265,19 +280,21 @@ async fn handle_ban_trader(
 ) {
     if let (Some(target_user_id), Some(banned)) = (
         payload.get("user_id").and_then(|v| v.as_u64()),
-        payload.get("banned").and_then(|v| v.as_bool())
+        payload.get("banned").and_then(|v| v.as_bool()),
     ) {
         match state.admin.set_trader_banned(target_user_id, banned).await {
             Ok(_) => {
                 if banned {
-                    state.event_log.log_trader_banned(target_user_id, "Admin action");
+                    state
+                        .event_log
+                        .log_trader_banned(target_user_id, "Admin action");
                 } else {
                     state.event_log.log_trader_unbanned(target_user_id);
                 }
 
                 let action = if banned { "banned" } else { "unbanned" };
                 let msg = ServerMessage::System {
-                    message: format!("Trader {} {}", target_user_id, action)
+                    message: format!("Trader {} {}", target_user_id, action),
                 };
                 send_message(sender, &msg).await;
             }
@@ -296,7 +313,7 @@ async fn handle_mute_trader(
 ) {
     if let (Some(target_user_id), Some(muted)) = (
         payload.get("user_id").and_then(|v| v.as_u64()),
-        payload.get("muted").and_then(|v| v.as_bool())
+        payload.get("muted").and_then(|v| v.as_bool()),
     ) {
         match state.admin.set_trader_chat(target_user_id, !muted).await {
             Ok(_) => {
@@ -308,7 +325,7 @@ async fn handle_mute_trader(
 
                 let action = if muted { "muted" } else { "unmuted" };
                 let msg = ServerMessage::System {
-                    message: format!("Trader {} chat {}", target_user_id, action)
+                    message: format!("Trader {} chat {}", target_user_id, action),
                 };
                 send_message(sender, &msg).await;
             }
@@ -328,14 +345,15 @@ async fn handle_get_all_trades(
     let user_id_filter = payload.get("user_id").and_then(|v| v.as_u64());
     let symbol_filter = payload.get("symbol").and_then(|v| v.as_str());
     let page = payload.get("page").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let page_size = payload.get("page_size").and_then(|v| v.as_u64()).unwrap_or(20) as u32;
+    let page_size = payload
+        .get("page_size")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(20) as u32;
 
-    let (trades, total_count, has_more) = state.trade_history.get_all_trades_admin(
-        user_id_filter,
-        symbol_filter,
-        page,
-        page_size,
-    );
+    let (trades, total_count, has_more) =
+        state
+            .trade_history
+            .get_all_trades_admin(user_id_filter, symbol_filter, page, page_size);
 
     let msg = ServerMessage::AdminTradeHistory {
         trades,
@@ -361,7 +379,9 @@ async fn handle_get_all_open_orders(
         }
     }
 
-    let orders = state.orders.get_all_orders_admin(symbol_filter, &user_names);
+    let orders = state
+        .orders
+        .get_all_orders_admin(symbol_filter, &user_names);
     let total_count = orders.len();
 
     let msg = ServerMessage::AdminOpenOrders {
@@ -385,9 +405,9 @@ async fn handle_get_orderbook(
         }
 
         let orders = state.orders.get_all_orders_admin(Some(symbol), &user_names);
-        let (bids, asks): (Vec<_>, Vec<_>) = orders.into_iter().partition(|o| {
-            matches!(o.side, OrderSide::Buy)
-        });
+        let (bids, asks): (Vec<_>, Vec<_>) = orders
+            .into_iter()
+            .partition(|o| matches!(o.side, OrderSide::Buy));
 
         let msg = ServerMessage::AdminOrderbook {
             symbol: symbol.to_string(),
@@ -423,24 +443,26 @@ async fn handle_get_dashboard_metrics(
     }
 
     // Create a user ID to name lookup
-    let user_names: HashMap<u64, String> = users.iter()
-        .map(|u| (u.id, u.name.clone()))
-        .collect();
+    let user_names: HashMap<u64, String> = users.iter().map(|u| (u.id, u.name.clone())).collect();
 
     // Build active sessions list with real data
     let all_sessions = state.sessions.get_all_sessions();
-    let active_sessions: Vec<ActiveSessionInfo> = all_sessions.iter().map(|session| {
-        ActiveSessionInfo {
-            session_id: session.session_id,
-            user_id: session.user_id,
-            user_name: user_names.get(&session.user_id)
-                .cloned()
-                .unwrap_or_else(|| format!("User {}", session.user_id)),
-            connected_at: session.connected_at,
-            last_activity: session.last_activity,
-            messages_sent: 0, // TODO: Track message count per session
-        }
-    }).collect();
+    let active_sessions: Vec<ActiveSessionInfo> = all_sessions
+        .iter()
+        .map(|session| {
+            ActiveSessionInfo {
+                session_id: session.session_id,
+                user_id: session.user_id,
+                user_name: user_names
+                    .get(&session.user_id)
+                    .cloned()
+                    .unwrap_or_else(|| format!("User {}", session.user_id)),
+                connected_at: session.connected_at,
+                last_activity: session.last_activity,
+                messages_sent: 0, // TODO: Track message count per session
+            }
+        })
+        .collect();
 
     // Calculate server uptime
     let now = chrono::Utc::now().timestamp();

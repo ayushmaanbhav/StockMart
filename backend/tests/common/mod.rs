@@ -15,7 +15,9 @@ use stockmart_backend::domain::trading::order::{OrderSide, OrderStatus, OrderTyp
 use stockmart_backend::domain::trading::order_entity::Order;
 use stockmart_backend::domain::{CompanyRepository, UserRepository};
 use stockmart_backend::infrastructure::id_generator::IdGenerators;
-use stockmart_backend::infrastructure::persistence::{InMemoryCompanyRepository, InMemoryUserRepository};
+use stockmart_backend::infrastructure::persistence::{
+    InMemoryCompanyRepository, InMemoryUserRepository,
+};
 use stockmart_backend::service::admin::AdminService;
 use stockmart_backend::service::chat::ChatService;
 use stockmart_backend::service::engine::MatchingEngine;
@@ -145,15 +147,14 @@ pub async fn create_test_state_with_config(config: TestConfig) -> Arc<AppState> 
 // =============================================================================
 
 /// Create a test user and return their user_id
-pub async fn create_test_user(
-    state: &AppState,
-    regno: &str,
-    name: &str,
-    password: &str,
-) -> u64 {
+pub async fn create_test_user(state: &AppState, regno: &str, name: &str, password: &str) -> u64 {
     let user = User::new(regno.to_string(), name.to_string(), password.to_string());
     let user_id = user.id;
-    state.user_repo.save(user).await.expect("Failed to save test user");
+    state
+        .user_repo
+        .save(user)
+        .await
+        .expect("Failed to save test user");
     user_id
 }
 
@@ -169,18 +170,23 @@ pub async fn create_test_user_with_portfolio(
     user.money = money;
 
     for (symbol, qty) in portfolio {
-        user.portfolio.push(stockmart_backend::domain::models::Portfolio {
-            user_id: user.id,
-            symbol,
-            qty,
-            short_qty: 0,
-            locked_qty: 0,
-            average_buy_price: 100 * 10_000, // $100
-        });
+        user.portfolio
+            .push(stockmart_backend::domain::models::Portfolio {
+                user_id: user.id,
+                symbol,
+                qty,
+                short_qty: 0,
+                locked_qty: 0,
+                average_buy_price: 100 * 10_000, // $100
+            });
     }
 
     let user_id = user.id;
-    state.user_repo.save(user).await.expect("Failed to save test user");
+    state
+        .user_repo
+        .save(user)
+        .await
+        .expect("Failed to save test user");
     user_id
 }
 
@@ -189,7 +195,11 @@ pub async fn create_admin_user(state: &AppState, regno: &str, name: &str) -> u64
     let mut user = User::new(regno.to_string(), name.to_string(), "admin".to_string());
     user.role = stockmart_backend::domain::user::role::Role::Admin;
     let user_id = user.id;
-    state.user_repo.save(user).await.expect("Failed to save admin user");
+    state
+        .user_repo
+        .save(user)
+        .await
+        .expect("Failed to save admin user");
     user_id
 }
 
@@ -198,11 +208,7 @@ pub async fn create_admin_user(state: &AppState, regno: &str, name: &str) -> u64
 // =============================================================================
 
 /// Create a test company and return its symbol
-pub async fn create_test_company(
-    state: &AppState,
-    symbol: &str,
-    name: &str,
-) -> String {
+pub async fn create_test_company(state: &AppState, symbol: &str, name: &str) -> String {
     let company = Company {
         id: IdGenerators::global().next_company_id(),
         symbol: symbol.to_string(),
@@ -214,7 +220,11 @@ pub async fn create_test_company(
         volatility: 10,
     };
 
-    state.company_repo.save(company).await.expect("Failed to save test company");
+    state
+        .company_repo
+        .save(company)
+        .await
+        .expect("Failed to save test company");
     state.engine.create_orderbook(symbol.to_string());
 
     symbol.to_string()
@@ -223,11 +233,20 @@ pub async fn create_test_company(
 /// Create multiple test companies
 pub async fn create_test_companies(state: &AppState, count: usize) -> Vec<String> {
     let mut symbols = Vec::new();
-    let names = ["AAPL", "GOOGL", "MSFT", "AMZN", "META", "TSLA", "NVDA", "JPM", "V", "JNJ"];
+    let names = [
+        "AAPL", "GOOGL", "MSFT", "AMZN", "META", "TSLA", "NVDA", "JPM", "V", "JNJ",
+    ];
     let full_names = [
-        "Apple Inc.", "Alphabet Inc.", "Microsoft Corp.", "Amazon.com Inc.",
-        "Meta Platforms", "Tesla Inc.", "NVIDIA Corp.", "JPMorgan Chase",
-        "Visa Inc.", "Johnson & Johnson"
+        "Apple Inc.",
+        "Alphabet Inc.",
+        "Microsoft Corp.",
+        "Amazon.com Inc.",
+        "Meta Platforms",
+        "Tesla Inc.",
+        "NVIDIA Corp.",
+        "JPMorgan Chase",
+        "Visa Inc.",
+        "Johnson & Johnson",
     ];
 
     for i in 0..count.min(names.len()) {
@@ -258,22 +277,38 @@ pub fn to_dollars(scaled: i64) -> f64 {
 
 /// Assert that a user has specific money amount
 pub async fn assert_user_money(state: &AppState, user_id: u64, expected: i64) {
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User not found");
-    assert_eq!(user.money, expected,
+    assert_eq!(
+        user.money,
+        expected,
         "User {} money mismatch: expected ${}, got ${}",
-        user_id, to_dollars(expected), to_dollars(user.money));
+        user_id,
+        to_dollars(expected),
+        to_dollars(user.money)
+    );
 }
 
 /// Assert that a user has specific locked money amount
 pub async fn assert_user_locked_money(state: &AppState, user_id: u64, expected: i64) {
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User not found");
-    assert_eq!(user.locked_money, expected,
+    assert_eq!(
+        user.locked_money,
+        expected,
         "User {} locked_money mismatch: expected ${}, got ${}",
-        user_id, to_dollars(expected), to_dollars(user.locked_money));
+        user_id,
+        to_dollars(expected),
+        to_dollars(user.locked_money)
+    );
 }
 
 /// Assert that a user has specific portfolio position
@@ -284,7 +319,10 @@ pub async fn assert_user_position(
     expected_qty: u64,
     expected_locked: u64,
 ) {
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User not found");
 
@@ -292,18 +330,25 @@ pub async fn assert_user_position(
 
     match position {
         Some(p) => {
-            assert_eq!(p.qty, expected_qty,
+            assert_eq!(
+                p.qty, expected_qty,
                 "User {} position {} qty mismatch: expected {}, got {}",
-                user_id, symbol, expected_qty, p.qty);
-            assert_eq!(p.locked_qty, expected_locked,
+                user_id, symbol, expected_qty, p.qty
+            );
+            assert_eq!(
+                p.locked_qty, expected_locked,
                 "User {} position {} locked_qty mismatch: expected {}, got {}",
-                user_id, symbol, expected_locked, p.locked_qty);
+                user_id, symbol, expected_locked, p.locked_qty
+            );
         }
         None if expected_qty == 0 && expected_locked == 0 => {
             // No position is fine if we expect 0
         }
         None => {
-            panic!("User {} has no position in {}, expected qty={}", user_id, symbol, expected_qty);
+            panic!(
+                "User {} has no position in {}, expected qty={}",
+                user_id, symbol, expected_qty
+            );
         }
     }
 }
@@ -323,14 +368,28 @@ pub fn assert_book_level(
             let levels = if side == "bid" { &bids } else { &asks };
             if level < levels.len() {
                 let (price, qty) = levels[level];
-                assert_eq!(price, expected_price,
+                assert_eq!(
+                    price,
+                    expected_price,
                     "Book {} {} level {} price mismatch: expected ${}, got ${}",
-                    symbol, side, level, to_dollars(expected_price), to_dollars(price));
-                assert_eq!(qty, expected_qty,
+                    symbol,
+                    side,
+                    level,
+                    to_dollars(expected_price),
+                    to_dollars(price)
+                );
+                assert_eq!(
+                    qty, expected_qty,
                     "Book {} {} level {} qty mismatch: expected {}, got {}",
-                    symbol, side, level, expected_qty, qty);
+                    symbol, side, level, expected_qty, qty
+                );
             } else {
-                panic!("Book {} has fewer than {} {} levels", symbol, level + 1, side);
+                panic!(
+                    "Book {} has fewer than {} {} levels",
+                    symbol,
+                    level + 1,
+                    side
+                );
             }
         }
         None => panic!("No order book found for {}", symbol),
@@ -385,8 +444,18 @@ pub async fn place_limit_buy(
     qty: u64,
     price: i64,
 ) -> Result<u64, String> {
-    let order = create_order(user_id, symbol, OrderType::Limit, OrderSide::Buy, qty, price);
-    state.engine.place_order(order).await
+    let order = create_order(
+        user_id,
+        symbol,
+        OrderType::Limit,
+        OrderSide::Buy,
+        qty,
+        price,
+    );
+    state
+        .engine
+        .place_order(order)
+        .await
         .map(|o| o.id)
         .map_err(|e| e.to_string())
 }
@@ -399,8 +468,18 @@ pub async fn place_limit_sell(
     qty: u64,
     price: i64,
 ) -> Result<u64, String> {
-    let order = create_order(user_id, symbol, OrderType::Limit, OrderSide::Sell, qty, price);
-    state.engine.place_order(order).await
+    let order = create_order(
+        user_id,
+        symbol,
+        OrderType::Limit,
+        OrderSide::Sell,
+        qty,
+        price,
+    );
+    state
+        .engine
+        .place_order(order)
+        .await
         .map(|o| o.id)
         .map_err(|e| e.to_string())
 }
@@ -412,8 +491,18 @@ pub async fn place_market_buy(
     symbol: &str,
     qty: u64,
 ) -> Result<u64, String> {
-    let order = create_order(user_id, symbol, OrderType::Market, OrderSide::Buy, qty, i64::MAX / 2);
-    state.engine.place_order(order).await
+    let order = create_order(
+        user_id,
+        symbol,
+        OrderType::Market,
+        OrderSide::Buy,
+        qty,
+        i64::MAX / 2,
+    );
+    state
+        .engine
+        .place_order(order)
+        .await
         .map(|o| o.id)
         .map_err(|e| e.to_string())
 }
@@ -426,7 +515,10 @@ pub async fn place_market_sell(
     qty: u64,
 ) -> Result<u64, String> {
     let order = create_order(user_id, symbol, OrderType::Market, OrderSide::Sell, qty, 1);
-    state.engine.place_order(order).await
+    state
+        .engine
+        .place_order(order)
+        .await
         .map(|o| o.id)
         .map_err(|e| e.to_string())
 }
@@ -440,8 +532,18 @@ pub async fn place_short(
     qty: u64,
     price: i64,
 ) -> Result<u64, String> {
-    let order = create_order(user_id, symbol, OrderType::Limit, OrderSide::Short, qty, price);
-    state.engine.place_order(order).await
+    let order = create_order(
+        user_id,
+        symbol,
+        OrderType::Limit,
+        OrderSide::Short,
+        qty,
+        price,
+    );
+    state
+        .engine
+        .place_order(order)
+        .await
         .map(|o| o.id)
         .map_err(|e| e.to_string())
 }
@@ -515,17 +617,24 @@ impl TradeCollector {
 
 /// Check that user money is non-negative
 pub async fn check_money_invariant(state: &AppState, user_id: u64) -> Result<(), String> {
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .map_err(|e| format!("DB error: {}", e))?
         .ok_or_else(|| "User not found".to_string())?;
 
     if user.money < 0 {
-        return Err(format!("Invariant violation: user {} has negative money: {}",
-            user_id, user.money));
+        return Err(format!(
+            "Invariant violation: user {} has negative money: {}",
+            user_id, user.money
+        ));
     }
     if user.locked_money < 0 {
-        return Err(format!("Invariant violation: user {} has negative locked_money: {}",
-            user_id, user.locked_money));
+        return Err(format!(
+            "Invariant violation: user {} has negative locked_money: {}",
+            user_id, user.locked_money
+        ));
     }
 
     Ok(())
@@ -533,7 +642,10 @@ pub async fn check_money_invariant(state: &AppState, user_id: u64) -> Result<(),
 
 /// Check that locked_qty <= qty for all positions
 pub async fn check_position_invariant(state: &AppState, user_id: u64) -> Result<(), String> {
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .map_err(|e| format!("DB error: {}", e))?
         .ok_or_else(|| "User not found".to_string())?;
 
@@ -557,7 +669,7 @@ pub fn check_book_invariant(state: &AppState, symbol: &str) -> Result<(), String
         Some((bids, asks)) => {
             // Check bids sorted descending
             for i in 1..bids.len() {
-                if bids[i].0 > bids[i-1].0 {
+                if bids[i].0 > bids[i - 1].0 {
                     return Err(format!(
                         "Invariant violation: {} bids not sorted descending at level {}",
                         symbol, i
@@ -567,7 +679,7 @@ pub fn check_book_invariant(state: &AppState, symbol: &str) -> Result<(), String
 
             // Check asks sorted ascending
             for i in 1..asks.len() {
-                if asks[i].0 < asks[i-1].0 {
+                if asks[i].0 < asks[i - 1].0 {
                     return Err(format!(
                         "Invariant violation: {} asks not sorted ascending at level {}",
                         symbol, i

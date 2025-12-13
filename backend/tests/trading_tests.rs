@@ -16,13 +16,9 @@ async fn test_place_limit_buy_market_open() {
     let state = create_test_state().await;
 
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
-    let user_id = create_test_user_with_portfolio(
-        &state,
-        "BUYER001",
-        "Buyer",
-        dollars(100_000),
-        vec![],
-    ).await;
+    let user_id =
+        create_test_user_with_portfolio(&state, "BUYER001", "Buyer", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
@@ -49,7 +45,8 @@ async fn test_place_limit_sell_market_open() {
         "Seller",
         dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
@@ -72,15 +69,18 @@ async fn test_place_order_market_closed() {
         "Closed Market User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     close_market(&state);
 
     let result = place_limit_buy(&state, user_id, &symbol, 10, dollars(100)).await;
     assert!(result.is_err(), "Order should fail when market is closed");
     let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("MARKET_CLOSED") || err_msg.to_lowercase().contains("closed"),
-        "Error should mention market closed");
+    assert!(
+        err_msg.contains("MARKET_CLOSED") || err_msg.to_lowercase().contains("closed"),
+        "Error should mention market closed"
+    );
 }
 
 /// TRADE-PLACE-007: Place order for non-existent symbol should fail
@@ -94,7 +94,8 @@ async fn test_place_order_nonexistent_symbol() {
         "No Symbol User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
@@ -114,15 +115,18 @@ async fn test_place_buy_insufficient_funds() {
         "Poor Buyer",
         dollars(100), // Only $100
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Try to buy $10,000 worth of stock
     let result = place_limit_buy(&state, user_id, &symbol, 100, dollars(100)).await;
     assert!(result.is_err(), "Order should fail with insufficient funds");
-    assert!(result.unwrap_err().to_lowercase().contains("insufficient"),
-        "Error should mention insufficient funds");
+    assert!(
+        result.unwrap_err().to_lowercase().contains("insufficient"),
+        "Error should mention insufficient funds"
+    );
 }
 
 /// TRADE-PLACE-009: Place sell order with insufficient shares should fail
@@ -137,13 +141,17 @@ async fn test_place_sell_insufficient_shares() {
         "Poor Seller",
         dollars(10_000),
         vec![("AAPL".to_string(), 10)], // Only 10 shares
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Try to sell 100 shares
     let result = place_limit_sell(&state, user_id, &symbol, 100, dollars(100)).await;
-    assert!(result.is_err(), "Order should fail with insufficient shares");
+    assert!(
+        result.is_err(),
+        "Order should fail with insufficient shares"
+    );
 }
 
 /// TRADE-PLACE-011: Place order with qty=0
@@ -160,14 +168,18 @@ async fn test_place_order_zero_qty() {
         "Zero Qty User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Current behavior: qty=0 orders are accepted (no validation)
     let result = place_limit_buy(&state, user_id, &symbol, 0, dollars(100)).await;
     // Document current behavior - this is a known gap in validation
-    assert!(result.is_ok(), "Currently qty=0 orders are accepted (missing validation)");
+    assert!(
+        result.is_ok(),
+        "Currently qty=0 orders are accepted (missing validation)"
+    );
 }
 
 /// TRADE-PLACE-012: Place limit order with price<=0
@@ -184,14 +196,18 @@ async fn test_place_order_zero_price() {
         "Zero Price User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Current behavior: price=0 orders are accepted (no validation)
     let result = place_limit_buy(&state, user_id, &symbol, 10, 0).await;
     // Document current behavior - this is a known gap in validation
-    assert!(result.is_ok(), "Currently price=0 orders are accepted (missing validation)");
+    assert!(
+        result.is_ok(),
+        "Currently price=0 orders are accepted (missing validation)"
+    );
 }
 
 /// TRADE-PLACE-017: Verify locked_money updated on buy order
@@ -206,16 +222,21 @@ async fn test_locked_money_on_buy() {
         "Lock Money User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Place first order
-    place_limit_buy(&state, user_id, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_buy(&state, user_id, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     assert_user_locked_money(&state, user_id, dollars(1_000)).await;
 
     // Place second order
-    place_limit_buy(&state, user_id, &symbol, 20, dollars(50)).await.unwrap();
+    place_limit_buy(&state, user_id, &symbol, 20, dollars(50))
+        .await
+        .unwrap();
     assert_user_locked_money(&state, user_id, dollars(2_000)).await; // 1000 + 1000
 }
 
@@ -231,16 +252,21 @@ async fn test_locked_qty_on_sell() {
         "Lock Qty User",
         dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Place first sell order
-    place_limit_sell(&state, user_id, &symbol, 30, dollars(150)).await.unwrap();
+    place_limit_sell(&state, user_id, &symbol, 30, dollars(150))
+        .await
+        .unwrap();
     assert_user_position(&state, user_id, &symbol, 100, 30).await;
 
     // Place second sell order
-    place_limit_sell(&state, user_id, &symbol, 20, dollars(160)).await.unwrap();
+    place_limit_sell(&state, user_id, &symbol, 20, dollars(160))
+        .await
+        .unwrap();
     assert_user_position(&state, user_id, &symbol, 100, 50).await;
 }
 
@@ -260,12 +286,15 @@ async fn test_cancel_own_order() {
         "Cancel User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Place order
-    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     assert_user_locked_money(&state, user_id, dollars(1_000)).await;
 
     // Cancel order
@@ -282,29 +311,26 @@ async fn test_cancel_other_users_order() {
     let state = create_test_state().await;
 
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
-    let user1 = create_test_user_with_portfolio(
-        &state,
-        "OWNER",
-        "Order Owner",
-        dollars(100_000),
-        vec![],
-    ).await;
-    let user2 = create_test_user_with_portfolio(
-        &state,
-        "OTHER",
-        "Other User",
-        dollars(100_000),
-        vec![],
-    ).await;
+    let user1 =
+        create_test_user_with_portfolio(&state, "OWNER", "Order Owner", dollars(100_000), vec![])
+            .await;
+    let user2 =
+        create_test_user_with_portfolio(&state, "OTHER", "Other User", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
     // User1 places order
-    let order_id = place_limit_buy(&state, user1, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user1, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // User2 tries to cancel
     let result = state.engine.cancel_order(user2, &symbol, order_id).await;
-    assert!(result.is_err(), "Should not be able to cancel other user's order");
+    assert!(
+        result.is_err(),
+        "Should not be able to cancel other user's order"
+    );
 }
 
 /// TRADE-CANCEL-003: Cancel non-existent order should fail
@@ -318,7 +344,8 @@ async fn test_cancel_nonexistent_order() {
         "Cancel Fake User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     let result = state.engine.cancel_order(user_id, "FAKE", 999999).await;
     assert!(result.is_err(), "Cancel non-existent order should fail");
@@ -337,18 +364,25 @@ async fn test_locked_money_released_on_cancel() {
         "Release User",
         initial_money,
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Verify locked
     let user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
     assert_eq!(user.locked_money, dollars(1_000));
 
     // Cancel
-    state.engine.cancel_order(user_id, &symbol, order_id).await.unwrap();
+    state
+        .engine
+        .cancel_order(user_id, &symbol, order_id)
+        .await
+        .unwrap();
 
     // Verify released
     let user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
@@ -368,17 +402,24 @@ async fn test_locked_qty_released_on_cancel() {
         "Release Qty User",
         dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_sell(&state, user_id, &symbol, 50, dollars(150)).await.unwrap();
+    let order_id = place_limit_sell(&state, user_id, &symbol, 50, dollars(150))
+        .await
+        .unwrap();
 
     // Verify locked
     assert_user_position(&state, user_id, &symbol, 100, 50).await;
 
     // Cancel
-    state.engine.cancel_order(user_id, &symbol, order_id).await.unwrap();
+    state
+        .engine
+        .cancel_order(user_id, &symbol, order_id)
+        .await
+        .unwrap();
 
     // Verify released
     assert_user_position(&state, user_id, &symbol, 100, 0).await;
@@ -397,32 +438,45 @@ async fn test_price_time_priority_fifo() {
 
     // Create sellers
     let seller1 = create_test_user_with_portfolio(
-        &state, "SELLER1", "Seller 1", dollars(10_000),
+        &state,
+        "SELLER1",
+        "Seller 1",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let seller2 = create_test_user_with_portfolio(
-        &state, "SELLER2", "Seller 2", dollars(10_000),
+        &state,
+        "SELLER2",
+        "Seller 2",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     // Create buyer with enough money
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Seller1 places ask first at $100
-    place_limit_sell(&state, seller1, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller1, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Seller2 places ask second at same price $100
-    place_limit_sell(&state, seller2, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller2, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Subscribe to trades
     let mut collector = TradeCollector::new(&state);
 
     // Buyer places order for 50 shares - should match seller1 (first in time)
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     collector.collect();
 
@@ -430,7 +484,10 @@ async fn test_price_time_priority_fifo() {
     assert_eq!(collector.count(), 1);
     let trade = &collector.trades()[0];
     assert_eq!(trade.qty, 50);
-    assert_eq!(trade.maker_user_id, seller1, "Should match seller1 (first in time)");
+    assert_eq!(
+        trade.maker_user_id, seller1,
+        "Should match seller1 (first in time)"
+    );
 }
 
 /// BOOK-PTP-002: Better price matched first (buy side)
@@ -441,31 +498,41 @@ async fn test_better_bid_matched_first() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     // Create two buyers with different bid prices
-    let buyer1 = create_test_user_with_portfolio(
-        &state, "BUYER1", "Buyer 1", dollars(100_000), vec![],
-    ).await;
-    let buyer2 = create_test_user_with_portfolio(
-        &state, "BUYER2", "Buyer 2", dollars(100_000), vec![],
-    ).await;
+    let buyer1 =
+        create_test_user_with_portfolio(&state, "BUYER1", "Buyer 1", dollars(100_000), vec![])
+            .await;
+    let buyer2 =
+        create_test_user_with_portfolio(&state, "BUYER2", "Buyer 2", dollars(100_000), vec![])
+            .await;
 
     // Create seller
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Buyer1 bids $100
-    place_limit_buy(&state, buyer1, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer1, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Buyer2 bids $110 (better price, placed second)
-    place_limit_buy(&state, buyer2, &symbol, 50, dollars(110)).await.unwrap();
+    place_limit_buy(&state, buyer2, &symbol, 50, dollars(110))
+        .await
+        .unwrap();
 
     let mut collector = TradeCollector::new(&state);
 
     // Seller sells 50 shares at market (or low price)
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     collector.collect();
 
@@ -473,7 +540,10 @@ async fn test_better_bid_matched_first() {
     assert_eq!(collector.count(), 1);
     let trade = &collector.trades()[0];
     assert_eq!(trade.taker_user_id, seller);
-    assert_eq!(trade.maker_user_id, buyer2, "Should match buyer2 (better price)");
+    assert_eq!(
+        trade.maker_user_id, buyer2,
+        "Should match buyer2 (better price)"
+    );
     assert_eq!(trade.price, dollars(110)); // Trade at maker's price
 }
 
@@ -485,22 +555,29 @@ async fn test_simple_match() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Seller posts ask at $100
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     let mut collector = TradeCollector::new(&state);
 
     // Buyer hits the ask
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     collector.collect();
 
@@ -522,27 +599,40 @@ async fn test_one_buy_multiple_sells() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller1 = create_test_user_with_portfolio(
-        &state, "SELLER1", "Seller 1", dollars(10_000),
+        &state,
+        "SELLER1",
+        "Seller 1",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let seller2 = create_test_user_with_portfolio(
-        &state, "SELLER2", "Seller 2", dollars(10_000),
+        &state,
+        "SELLER2",
+        "Seller 2",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Two sellers post asks
-    place_limit_sell(&state, seller1, &symbol, 30, dollars(100)).await.unwrap();
-    place_limit_sell(&state, seller2, &symbol, 30, dollars(101)).await.unwrap();
+    place_limit_sell(&state, seller1, &symbol, 30, dollars(100))
+        .await
+        .unwrap();
+    place_limit_sell(&state, seller2, &symbol, 30, dollars(101))
+        .await
+        .unwrap();
 
     let mut collector = TradeCollector::new(&state);
 
     // Buyer wants 50 shares, willing to pay up to $101
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(101)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(101))
+        .await
+        .unwrap();
 
     collector.collect();
 
@@ -570,22 +660,29 @@ async fn test_limit_buy_rests_in_book() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Seller posts ask at $100
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     let mut collector = TradeCollector::new(&state);
 
     // Buyer bids $95 (below ask)
-    place_limit_buy(&state, buyer, &symbol, 30, dollars(95)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 30, dollars(95))
+        .await
+        .unwrap();
 
     collector.collect();
 
@@ -617,15 +714,23 @@ async fn test_depth_correct_levels() {
 
     for i in 0..5 {
         let buyer = create_test_user_with_portfolio(
-            &state, &format!("BUYER{}", i), &format!("Buyer {}", i),
-            dollars(100_000), vec![],
-        ).await;
+            &state,
+            &format!("BUYER{}", i),
+            &format!("Buyer {}", i),
+            dollars(100_000),
+            vec![],
+        )
+        .await;
         buyers.push(buyer);
 
         let seller = create_test_user_with_portfolio(
-            &state, &format!("SELLER{}", i), &format!("Seller {}", i),
-            dollars(10_000), vec![("AAPL".to_string(), 100)],
-        ).await;
+            &state,
+            &format!("SELLER{}", i),
+            &format!("Seller {}", i),
+            dollars(10_000),
+            vec![("AAPL".to_string(), 100)],
+        )
+        .await;
         sellers.push(seller);
     }
 
@@ -634,13 +739,17 @@ async fn test_depth_correct_levels() {
     // Place bids at different prices (descending)
     for (i, buyer) in buyers.iter().enumerate() {
         let price = dollars(100 - i as i64 * 2); // 100, 98, 96, 94, 92
-        place_limit_buy(&state, *buyer, &symbol, 10, price).await.unwrap();
+        place_limit_buy(&state, *buyer, &symbol, 10, price)
+            .await
+            .unwrap();
     }
 
     // Place asks at different prices (ascending)
     for (i, seller) in sellers.iter().enumerate() {
         let price = dollars(105 + i as i64 * 2); // 105, 107, 109, 111, 113
-        place_limit_sell(&state, *seller, &symbol, 10, price).await.unwrap();
+        place_limit_sell(&state, *seller, &symbol, 10, price)
+            .await
+            .unwrap();
     }
 
     let (bids, asks) = state.engine.get_order_book_depth(&symbol, 10).unwrap();
@@ -670,12 +779,19 @@ async fn test_order_starts_open() {
 
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
     let user_id = create_test_user_with_portfolio(
-        &state, "OPEN001", "Open Order User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "OPEN001",
+        "Open Order User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(90)).await.unwrap();
+    let order_id = place_limit_buy(&state, user_id, &symbol, 10, dollars(90))
+        .await
+        .unwrap();
 
     // Get order from OrdersService
     let orders = state.orders.get_user_orders(user_id);
@@ -696,20 +812,27 @@ async fn test_order_full_fill() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Seller posts ask
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Buyer hits the ask - order fully filled
-    let order_id = place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Order should be filled and removed from active orders
     use stockmart_backend::domain::trading::order::OrderStatus;
@@ -717,8 +840,10 @@ async fn test_order_full_fill() {
     let is_inactive = |o: &stockmart_backend::domain::ui_models::OpenOrderUI| {
         o.status != OrderStatus::Open && o.status != OrderStatus::Partial
     };
-    assert!(buyer_orders.is_empty() || buyer_orders.iter().all(is_inactive),
-        "Filled order should not be active");
+    assert!(
+        buyer_orders.is_empty() || buyer_orders.iter().all(is_inactive),
+        "Filled order should not be active"
+    );
 }
 
 /// SM-ORDER-002 & SM-ORDER-004: Partial fill updates status
@@ -729,20 +854,27 @@ async fn test_order_partial_fill() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Buyer posts bid for 100 shares
-    let buyer_order_id = place_limit_buy(&state, buyer, &symbol, 100, dollars(100)).await.unwrap();
+    let buyer_order_id = place_limit_buy(&state, buyer, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
 
     // Seller sells only 30 shares
-    place_limit_sell(&state, seller, &symbol, 30, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 30, dollars(100))
+        .await
+        .unwrap();
 
     // Buyer's order should be partially filled
     use stockmart_backend::domain::trading::order::OrderStatus;
@@ -753,8 +885,10 @@ async fn test_order_partial_fill() {
     let order = order.unwrap();
     assert_eq!(order.filled_qty, 30);
     assert_eq!(order.remaining_qty, 70);
-    assert!(order.status == OrderStatus::Open || order.status == OrderStatus::Partial,
-        "Partially filled order should still be active");
+    assert!(
+        order.status == OrderStatus::Open || order.status == OrderStatus::Partial,
+        "Partially filled order should still be active"
+    );
 }
 
 /// SM-ORDER-005 & SM-ORDER-006: Cancel from Open/Partial
@@ -765,34 +899,57 @@ async fn test_order_cancel_states() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "CANCELSTATES", "Cancel States User",
-        dollars(100_000), vec![("AAPL".to_string(), 100)],
-    ).await;
+        &state,
+        "CANCELSTATES",
+        "Cancel States User",
+        dollars(100_000),
+        vec![("AAPL".to_string(), 100)],
+    )
+    .await;
 
     open_market(&state);
 
     // Test cancel from Open
     use stockmart_backend::domain::trading::order::OrderStatus;
-    let order1 = place_limit_buy(&state, user, &symbol, 50, dollars(90)).await.unwrap();
-    state.engine.cancel_order(user, &symbol, order1).await.unwrap();
+    let order1 = place_limit_buy(&state, user, &symbol, 50, dollars(90))
+        .await
+        .unwrap();
+    state
+        .engine
+        .cancel_order(user, &symbol, order1)
+        .await
+        .unwrap();
 
     let orders = state.orders.get_user_orders(user);
     let is_active = |o: &stockmart_backend::domain::ui_models::OpenOrderUI| {
         o.status == OrderStatus::Open || o.status == OrderStatus::Partial
     };
-    assert!(orders.iter().find(|o| o.order_id == order1 && is_active(o)).is_none(),
-        "Cancelled order should not be active");
+    assert!(
+        orders
+            .iter()
+            .find(|o| o.order_id == order1 && is_active(o))
+            .is_none(),
+        "Cancelled order should not be active"
+    );
 
     // Test cancel from Partial (need a counter-party for partial fill)
     let seller = create_test_user_with_portfolio(
-        &state, "PARTIALSELLER", "Partial Seller",
-        dollars(10_000), vec![("AAPL".to_string(), 50)],
-    ).await;
+        &state,
+        "PARTIALSELLER",
+        "Partial Seller",
+        dollars(10_000),
+        vec![("AAPL".to_string(), 50)],
+    )
+    .await;
 
-    let order2 = place_limit_buy(&state, user, &symbol, 100, dollars(95)).await.unwrap();
+    let order2 = place_limit_buy(&state, user, &symbol, 100, dollars(95))
+        .await
+        .unwrap();
 
     // Partial fill
-    place_limit_sell(&state, seller, &symbol, 30, dollars(95)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 30, dollars(95))
+        .await
+        .unwrap();
 
     // Verify partial state
     let orders = state.orders.get_user_orders(user);
@@ -801,11 +958,20 @@ async fn test_order_cancel_states() {
     assert_eq!(partial_order.unwrap().filled_qty, 30);
 
     // Cancel partial order
-    state.engine.cancel_order(user, &symbol, order2).await.unwrap();
+    state
+        .engine
+        .cancel_order(user, &symbol, order2)
+        .await
+        .unwrap();
 
     let orders = state.orders.get_user_orders(user);
-    assert!(orders.iter().find(|o| o.order_id == order2 && is_active(o)).is_none(),
-        "Cancelled partial order should not be active");
+    assert!(
+        orders
+            .iter()
+            .find(|o| o.order_id == order2 && is_active(o))
+            .is_none(),
+        "Cancelled partial order should not be active"
+    );
 }
 
 // =============================================================================
@@ -820,17 +986,24 @@ async fn test_buyer_receives_shares() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Buyer should now have shares
     assert_user_position(&state, buyer, &symbol, 50, 0).await;
@@ -844,22 +1017,29 @@ async fn test_buyer_locked_money_released() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let initial_money = dollars(100_000);
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", initial_money, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", initial_money, vec![]).await;
 
     open_market(&state);
 
     // Buyer posts bid
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
     assert_user_locked_money(&state, buyer, dollars(5_000)).await;
 
     // Seller fills
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Buyer locked_money should be released
     assert_user_locked_money(&state, buyer, 0).await;
@@ -878,17 +1058,24 @@ async fn test_seller_receives_money() {
 
     let initial_seller_money = dollars(10_000);
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", initial_seller_money,
+        &state,
+        "SELLER",
+        "Seller",
+        initial_seller_money,
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Seller should receive money
     let user = state.user_repo.find_by_id(seller).await.unwrap().unwrap();
@@ -903,21 +1090,28 @@ async fn test_seller_locked_qty_released() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Seller posts ask - qty locked
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
     assert_user_position(&state, seller, &symbol, 100, 50).await;
 
     // Buyer fills
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Seller locked_qty released and qty reduced
     assert_user_position(&state, seller, &symbol, 50, 0).await;
@@ -934,7 +1128,10 @@ async fn test_market_starts_open() {
     let state = create_test_state().await;
 
     // Current implementation starts with market open
-    assert!(is_market_open(&state), "Market should start open (current default)");
+    assert!(
+        is_market_open(&state),
+        "Market should start open (current default)"
+    );
 }
 
 /// SM-MKT-002: Open market
@@ -973,20 +1170,27 @@ async fn test_money_never_negative() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 1000)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Execute many trades
     for i in 0..10 {
         let price = dollars(100 + i);
-        place_limit_sell(&state, seller, &symbol, 10, price).await.ok();
-        place_limit_buy(&state, buyer, &symbol, 10, price).await.ok();
+        place_limit_sell(&state, seller, &symbol, 10, price)
+            .await
+            .ok();
+        place_limit_buy(&state, buyer, &symbol, 10, price)
+            .await
+            .ok();
 
         // Check invariant after each trade
         check_money_invariant(&state, buyer).await.unwrap();
@@ -1002,14 +1206,20 @@ async fn test_locked_qty_never_exceeds_qty() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "LOCKINV", "Lock Invariant User", dollars(10_000),
+        &state,
+        "LOCKINV",
+        "Lock Invariant User",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Try to lock all shares
-    place_limit_sell(&state, user, &symbol, 100, dollars(150)).await.unwrap();
+    place_limit_sell(&state, user, &symbol, 100, dollars(150))
+        .await
+        .unwrap();
 
     check_position_invariant(&state, user).await.unwrap();
 
@@ -1029,19 +1239,26 @@ async fn test_no_crossed_book() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     // Create users
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Place orders that should match
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(105)).await.unwrap();
-    place_limit_sell(&state, seller, &symbol, 30, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(105))
+        .await
+        .unwrap();
+    place_limit_sell(&state, seller, &symbol, 30, dollars(100))
+        .await
+        .unwrap();
 
     // Book should not be crossed
     check_book_invariant(&state, &symbol).unwrap();

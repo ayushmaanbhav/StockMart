@@ -1,0 +1,80 @@
+# Labels for PR based on changed files
+
+# Backend
+backend:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/**'
+
+rust:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/**/*.rs'
+
+# Frontend
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/**'
+
+typescript:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/**/*.{ts,tsx}'
+
+styles:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/**/*.{css,scss}'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/tests/**'
+          - 'frontend/tests/**'
+          - '**/*.test.{ts,tsx}'
+          - '**/*.spec.{ts,tsx}'
+
+e2e:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/tests/e2e/**'
+
+# CI/CD
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.toml'
+          - '*.json'
+          - '*.yml'
+          - '*.yaml'
+          - '.env*'
+
+# Components
+components:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/src/components/**'
+
+# Features
+feature:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/src/features/**'
+
+# API
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/src/api/**'
+          - 'backend/src/presentation/**'
+
+# Store/State
+state:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/src/store/**'

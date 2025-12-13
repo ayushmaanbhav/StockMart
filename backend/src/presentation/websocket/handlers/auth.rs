@@ -5,15 +5,15 @@
 use axum::extract::ws::{Message, WebSocket};
 use rand::Rng;
 use std::sync::Arc;
-use tracing::{debug, info, warn, error};
+use tracing::{debug, error, info, warn};
 
 use crate::api::ws::AppState;
-use crate::domain::models::{User, PRICE_SCALE};
 use crate::domain::error::UserError;
-use crate::presentation::websocket::messages::{ServerMessage, CompanyInfo};
+use crate::domain::models::{User, PRICE_SCALE};
+use crate::presentation::websocket::messages::{CompanyInfo, ServerMessage};
 
-use super::send_message;
 use super::helpers::calculate_net_worth;
+use super::send_message;
 
 /// Handle token-based authentication (for reconnection)
 ///
@@ -44,7 +44,7 @@ pub async fn handle_auth(
                         // Revoke token for banned user
                         state.tokens.revoke_token(token);
                         let msg = ServerMessage::AuthFailed {
-                            reason: "Account has been banned".to_string()
+                            reason: "Account has been banned".to_string(),
                         };
                         send_message(sender, &msg).await;
                         return;
@@ -56,7 +56,11 @@ pub async fn handle_auth(
                     *user_id = Some(uid);
 
                     if !kicked.is_empty() {
-                        info!("User {} authenticated via token, kicked {} old session(s)", uid, kicked.len());
+                        info!(
+                            "User {} authenticated via token, kicked {} old session(s)",
+                            uid,
+                            kicked.len()
+                        );
                     } else {
                         info!("User {} authenticated via token with session {}", uid, sid);
                     }
@@ -79,14 +83,14 @@ pub async fn handle_auth(
                     // Revoke orphaned token
                     state.tokens.revoke_token(token);
                     let msg = ServerMessage::AuthFailed {
-                        reason: "User not found".to_string()
+                        reason: "User not found".to_string(),
                     };
                     send_message(sender, &msg).await;
                 }
                 Err(e) => {
                     error!("Auth error for uid {}: {}", uid, e);
                     let msg = ServerMessage::AuthFailed {
-                        reason: format!("Auth error: {}", e)
+                        reason: format!("Auth error: {}", e),
                     };
                     send_message(sender, &msg).await;
                 }
@@ -95,7 +99,7 @@ pub async fn handle_auth(
         None => {
             warn!("Auth failed: invalid or expired token");
             let msg = ServerMessage::AuthFailed {
-                reason: "Invalid or expired token".to_string()
+                reason: "Invalid or expired token".to_string(),
             };
             send_message(sender, &msg).await;
         }
@@ -119,7 +123,7 @@ pub async fn handle_login(
             if user.password_hash != password {
                 warn!("Login failed for {}: invalid password", regno);
                 let msg = ServerMessage::AuthFailed {
-                    reason: "Invalid password".to_string()
+                    reason: "Invalid password".to_string(),
                 };
                 send_message(sender, &msg).await;
                 return;
@@ -128,7 +132,7 @@ pub async fn handle_login(
             if user.banned {
                 warn!("Login failed for {}: account banned", regno);
                 let msg = ServerMessage::AuthFailed {
-                    reason: "Account has been banned".to_string()
+                    reason: "Account has been banned".to_string(),
                 };
                 send_message(sender, &msg).await;
                 return;
@@ -140,11 +144,17 @@ pub async fn handle_login(
             *user_id = Some(user.id);
 
             if !kicked.is_empty() {
-                info!("User {} (regno={}) logged in, kicked {} old session(s)",
-                      user.name, regno, kicked.len());
+                info!(
+                    "User {} (regno={}) logged in, kicked {} old session(s)",
+                    user.name,
+                    regno,
+                    kicked.len()
+                );
             } else {
-                info!("User {} (regno={}) logged in with session {}",
-                      user.name, regno, sid);
+                info!(
+                    "User {} (regno={}) logged in with session {}",
+                    user.name, regno, sid
+                );
             }
 
             // Log login event
@@ -167,14 +177,14 @@ pub async fn handle_login(
         Ok(None) => {
             warn!("Login failed: regno {} not found", regno);
             let msg = ServerMessage::AuthFailed {
-                reason: "User not found. Please register first.".to_string()
+                reason: "User not found. Please register first.".to_string(),
             };
             send_message(sender, &msg).await;
         }
         Err(e) => {
             error!("Login error for regno {}: {}", regno, e);
             let msg = ServerMessage::AuthFailed {
-                reason: format!("Login error: {}", e)
+                reason: format!("Login error: {}", e),
             };
             send_message(sender, &msg).await;
         }
@@ -205,9 +215,11 @@ pub async fn handle_register(
     match state.user_repo.regno_exists(&regno).await {
         Ok(true) => {
             warn!("Registration failed: regno {} already exists", regno);
-            let err = UserError::RegnoExists { regno: regno.clone() };
+            let err = UserError::RegnoExists {
+                regno: regno.clone(),
+            };
             let msg = ServerMessage::RegisterFailed {
-                reason: err.to_string()
+                reason: err.to_string(),
             };
             send_message(sender, &msg).await;
             return;
@@ -215,7 +227,7 @@ pub async fn handle_register(
         Err(e) => {
             error!("Registration error for regno {}: {}", regno, e);
             let msg = ServerMessage::RegisterFailed {
-                reason: format!("Registration error: {}", e)
+                reason: format!("Registration error: {}", e),
             };
             send_message(sender, &msg).await;
             return;
@@ -229,7 +241,7 @@ pub async fn handle_register(
         Err(e) => {
             error!("Failed to fetch companies for registration: {}", e);
             let msg = ServerMessage::RegisterFailed {
-                reason: "Failed to initialize portfolio".to_string()
+                reason: "Failed to initialize portfolio".to_string(),
             };
             send_message(sender, &msg).await;
             return;
@@ -270,18 +282,24 @@ pub async fn handle_register(
                 average_buy_price: base_price,
             });
 
-            debug!("  {} allocated {} shares = ${}",
-                   company.symbol, final_shares, share_value / PRICE_SCALE);
+            debug!(
+                "  {} allocated {} shares = ${}",
+                company.symbol,
+                final_shares,
+                share_value / PRICE_SCALE
+            );
         }
 
         new_user.money = (total_starting_value - total_portfolio_value).max(0);
 
         let actual_networth = new_user.money + total_portfolio_value;
-        info!("New trader {} allocated: cash=${}, portfolio=${}, networth=${}",
-              name,
-              new_user.money / PRICE_SCALE,
-              total_portfolio_value / PRICE_SCALE,
-              actual_networth / PRICE_SCALE);
+        info!(
+            "New trader {} allocated: cash=${}, portfolio=${}, networth=${}",
+            name,
+            new_user.money / PRICE_SCALE,
+            total_portfolio_value / PRICE_SCALE,
+            actual_networth / PRICE_SCALE
+        );
     } else {
         new_user.money = total_starting_value;
     }
@@ -295,11 +313,15 @@ pub async fn handle_register(
             *session_id = Some(sid);
             *user_id = Some(new_user_id);
 
-            info!("New user registered: {} (regno={}, id={}, session={})",
-                  name, regno, new_user_id, sid);
+            info!(
+                "New user registered: {} (regno={}, id={}, session={})",
+                name, regno, new_user_id, sid
+            );
 
             // Log registration event
-            let portfolio_value = new_user.portfolio.iter()
+            let portfolio_value = new_user
+                .portfolio
+                .iter()
                 .map(|p| (p.qty as i64) * p.average_buy_price)
                 .sum::<i64>();
             state.event_log.log_user_registered(
@@ -325,20 +347,25 @@ pub async fn handle_register(
             send_post_auth_data(sender, state, &new_user).await;
 
             // Broadcast welcome message
-            let portfolio_value_display = new_user.portfolio.iter()
+            let portfolio_value_display = new_user
+                .portfolio
+                .iter()
                 .map(|p| (p.qty as i64) * p.average_buy_price)
-                .sum::<i64>() / PRICE_SCALE;
+                .sum::<i64>()
+                / PRICE_SCALE;
             let starting_cash = new_user.money / PRICE_SCALE;
             let system_msg = ServerMessage::System {
-                message: format!("Welcome {}! You start with ${} in cash and ${} in stocks.",
-                                 name, starting_cash, portfolio_value_display)
+                message: format!(
+                    "Welcome {}! You start with ${} in cash and ${} in stocks.",
+                    name, starting_cash, portfolio_value_display
+                ),
             };
             send_message(sender, &system_msg).await;
         }
         Err(e) => {
             error!("Failed to save user {}: {}", regno, e);
             let msg = ServerMessage::RegisterFailed {
-                reason: format!("Failed to save user: {}", e)
+                reason: format!("Failed to save user: {}", e),
             };
             send_message(sender, &msg).await;
         }
@@ -353,14 +380,19 @@ async fn send_post_auth_data(
 ) {
     // Send company list
     if let Ok(companies) = state.company_repo.all().await {
-        let company_list: Vec<CompanyInfo> = companies.iter().map(|c| CompanyInfo {
-            id: c.id,
-            symbol: c.symbol.clone(),
-            name: c.name.clone(),
-            sector: c.sector.clone(),
-            volatility: c.volatility,
-        }).collect();
-        let companies_msg = ServerMessage::CompanyList { companies: company_list };
+        let company_list: Vec<CompanyInfo> = companies
+            .iter()
+            .map(|c| CompanyInfo {
+                id: c.id,
+                symbol: c.symbol.clone(),
+                name: c.name.clone(),
+                sector: c.sector.clone(),
+                volatility: c.volatility,
+            })
+            .collect();
+        let companies_msg = ServerMessage::CompanyList {
+            companies: company_list,
+        };
         send_message(sender, &companies_msg).await;
     }
 
@@ -377,7 +409,7 @@ async fn send_post_auth_data(
 
     // Send market status
     let status_msg = ServerMessage::MarketStatus {
-        is_open: state.engine.is_market_open()
+        is_open: state.engine.is_market_open(),
     };
     send_message(sender, &status_msg).await;
 }

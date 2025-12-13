@@ -5,11 +5,11 @@
 //! - Candle (OHLCV) entity
 //! - Chat message entity
 
-pub mod company;
 pub mod candle;
 pub mod chat;
+pub mod company;
 
 // Re-export entities
-pub use company::Company;
 pub use candle::Candle;
 pub use chat::ChatMessage;
+pub use company::Company;

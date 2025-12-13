@@ -65,7 +65,8 @@ impl WsTestClient {
     }
 
     async fn recv_type(&mut self, msg_type: &str) -> Option<Value> {
-        for _ in 0..20 {  // Increased from 10 to handle all post-auth messages
+        for _ in 0..20 {
+            // Increased from 10 to handle all post-auth messages
             if let Some(msg) = self.recv().await {
                 if msg.get("type").and_then(|t| t.as_str()) == Some(msg_type) {
                     return Some(msg);
@@ -134,11 +135,15 @@ impl TestServer {
         ));
 
         let market_service = Arc::new(MarketService::new());
-        let indices_service =
-            Arc::new(IndicesService::new(market_service.clone(), company_repo.clone()));
+        let indices_service = Arc::new(IndicesService::new(
+            market_service.clone(),
+            company_repo.clone(),
+        ));
         let news_service = Arc::new(NewsService::new(company_repo.clone()));
-        let leaderboard_service =
-            Arc::new(LeaderboardService::new(user_repo.clone(), market_service.clone()));
+        let leaderboard_service = Arc::new(LeaderboardService::new(
+            user_repo.clone(),
+            market_service.clone(),
+        ));
         let admin_service = Arc::new(AdminService::new(
             engine.clone(),
             company_repo.clone(),
@@ -197,7 +202,11 @@ impl TestServer {
         {
             use stockmart_backend::domain::models::User;
             use stockmart_backend::domain::user::role::Role;
-            let mut admin = User::new("ADMIN".to_string(), "Admin User".to_string(), "adminpass".to_string());
+            let mut admin = User::new(
+                "ADMIN".to_string(),
+                "Admin User".to_string(),
+                "adminpass".to_string(),
+            );
             admin.role = Role::Admin;
             state.user_repo.save(admin).await.unwrap();
         }
@@ -536,7 +545,12 @@ async fn e2e_test_order_insufficient_funds() {
     assert!(response.is_some(), "Expected OrderRejected response");
 
     let p = response.unwrap().get("payload").unwrap().clone();
-    assert!(p.get("error_code").unwrap().as_str().unwrap().contains("INSUFFICIENT"));
+    assert!(p
+        .get("error_code")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .contains("INSUFFICIENT"));
 
     client.close().await;
     server.shutdown().await;
@@ -575,7 +589,13 @@ async fn e2e_test_cancel_order() {
         .await;
 
     let ack = client.recv_type("OrderAck").await.unwrap();
-    let order_id = ack.get("payload").unwrap().get("order_id").unwrap().as_u64().unwrap();
+    let order_id = ack
+        .get("payload")
+        .unwrap()
+        .get("order_id")
+        .unwrap()
+        .as_u64()
+        .unwrap();
 
     // Cancel order
     client
@@ -589,7 +609,10 @@ async fn e2e_test_cancel_order() {
         .await;
 
     let cancel_response = client.recv_type("OrderCancelled").await;
-    assert!(cancel_response.is_some(), "Expected OrderCancelled response");
+    assert!(
+        cancel_response.is_some(),
+        "Expected OrderCancelled response"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -666,7 +689,12 @@ async fn e2e_test_ping_pong() {
 
     let response = client.recv_type("Pong").await;
     assert!(response.is_some(), "Expected Pong response");
-    assert!(response.unwrap().get("payload").unwrap().get("timestamp").is_some());
+    assert!(response
+        .unwrap()
+        .get("payload")
+        .unwrap()
+        .get("timestamp")
+        .is_some());
 
     client.close().await;
     server.shutdown().await;
@@ -679,7 +707,9 @@ async fn e2e_test_get_config() {
 
     let mut client = WsTestClient::connect(server.url()).await;
 
-    client.send(json!({"type": "GetConfig", "payload": {}})).await;
+    client
+        .send(json!({"type": "GetConfig", "payload": {}}))
+        .await;
 
     let response = client.recv_type("Config").await;
     assert!(response.is_some(), "Expected Config response");
@@ -714,7 +744,9 @@ async fn e2e_test_request_sync() {
         .await;
     let _ = client.recv_type("RegisterSuccess").await;
 
-    client.send(json!({"type": "RequestSync", "payload": {}})).await;
+    client
+        .send(json!({"type": "RequestSync", "payload": {}}))
+        .await;
 
     let response = client.recv_type("FullStateSync").await;
     assert!(response.is_some(), "Expected FullStateSync response");
@@ -791,7 +823,10 @@ async fn e2e_test_unauthenticated_request() {
         .await;
 
     let response = client.recv_type("Error").await;
-    assert!(response.is_some(), "Expected Error response for unauthenticated request");
+    assert!(
+        response.is_some(),
+        "Expected Error response for unauthenticated request"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -829,7 +864,10 @@ async fn e2e_test_invalid_symbol() {
         .await;
 
     let response = client.recv_type("OrderRejected").await;
-    assert!(response.is_some(), "Expected OrderRejected for invalid symbol");
+    assert!(
+        response.is_some(),
+        "Expected OrderRejected for invalid symbol"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -842,10 +880,17 @@ async fn e2e_test_malformed_message() {
 
     let mut client = WsTestClient::connect(server.url()).await;
 
-    client.write.send(Message::Text("not valid json".into())).await.unwrap();
+    client
+        .write
+        .send(Message::Text("not valid json".into()))
+        .await
+        .unwrap();
 
     let response = client.recv_type("Error").await;
-    assert!(response.is_some(), "Expected Error response for malformed message");
+    assert!(
+        response.is_some(),
+        "Expected Error response for malformed message"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -1116,7 +1161,10 @@ async fn e2e_test_admin_dashboard_metrics() {
         .await;
 
     let response = admin.recv_type("AdminDashboardMetrics").await;
-    assert!(response.is_some(), "Expected AdminDashboardMetrics response");
+    assert!(
+        response.is_some(),
+        "Expected AdminDashboardMetrics response"
+    );
 
     let p = response.unwrap().get("payload").unwrap().clone();
     let metrics = p.get("metrics").unwrap();
@@ -1159,7 +1207,13 @@ async fn e2e_test_admin_ban_trader() {
         }))
         .await;
     let trader_reg = trader.recv_type("RegisterSuccess").await.unwrap();
-    let trader_id = trader_reg.get("payload").unwrap().get("user_id").unwrap().as_u64().unwrap();
+    let trader_id = trader_reg
+        .get("payload")
+        .unwrap()
+        .get("user_id")
+        .unwrap()
+        .as_u64()
+        .unwrap();
 
     // Admin bans trader
     admin
@@ -1180,8 +1234,18 @@ async fn e2e_test_admin_ban_trader() {
         if let Some(msg) = admin.recv().await {
             let msg_type = msg.get("type").and_then(|t| t.as_str()).unwrap_or("");
             if msg_type == "System" {
-                let message = msg.get("payload").unwrap().get("message").unwrap().as_str().unwrap();
-                assert!(message.contains("banned"), "System message should confirm ban: {}", message);
+                let message = msg
+                    .get("payload")
+                    .unwrap()
+                    .get("message")
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                assert!(
+                    message.contains("banned"),
+                    "System message should confirm ban: {}",
+                    message
+                );
                 admin.close().await;
                 trader.close().await;
                 server.shutdown().await;
@@ -1225,7 +1289,13 @@ async fn e2e_test_admin_mute_trader() {
         }))
         .await;
     let trader_reg = trader.recv_type("RegisterSuccess").await.unwrap();
-    let trader_id = trader_reg.get("payload").unwrap().get("user_id").unwrap().as_u64().unwrap();
+    let trader_id = trader_reg
+        .get("payload")
+        .unwrap()
+        .get("user_id")
+        .unwrap()
+        .as_u64()
+        .unwrap();
 
     // Admin mutes trader
     admin
@@ -1245,8 +1315,18 @@ async fn e2e_test_admin_mute_trader() {
         if let Some(msg) = admin.recv().await {
             let msg_type = msg.get("type").and_then(|t| t.as_str()).unwrap_or("");
             if msg_type == "System" {
-                let message = msg.get("payload").unwrap().get("message").unwrap().as_str().unwrap();
-                assert!(message.contains("muted"), "System message should confirm mute: {}", message);
+                let message = msg
+                    .get("payload")
+                    .unwrap()
+                    .get("message")
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                assert!(
+                    message.contains("muted"),
+                    "System message should confirm mute: {}",
+                    message
+                );
                 admin.close().await;
                 trader.close().await;
                 server.shutdown().await;
@@ -1414,8 +1494,18 @@ async fn e2e_test_admin_set_volatility() {
         if let Some(msg) = admin.recv().await {
             let msg_type = msg.get("type").and_then(|t| t.as_str()).unwrap_or("");
             if msg_type == "System" {
-                let message = msg.get("payload").unwrap().get("message").unwrap().as_str().unwrap();
-                assert!(message.contains("Volatility"), "Expected volatility message: {}", message);
+                let message = msg
+                    .get("payload")
+                    .unwrap()
+                    .get("message")
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                assert!(
+                    message.contains("Volatility"),
+                    "Expected volatility message: {}",
+                    message
+                );
                 admin.close().await;
                 server.shutdown().await;
                 return;
@@ -2234,7 +2324,11 @@ async fn e2e_test_invalid_order_side() {
     assert!(response.is_some(), "Should receive OrderRejected");
     if let Some(msg) = response {
         let p = msg.get("payload").unwrap();
-        assert!(p.get("error_code").and_then(|v| v.as_str()).unwrap().contains("INVALID"));
+        assert!(p
+            .get("error_code")
+            .and_then(|v| v.as_str())
+            .unwrap()
+            .contains("INVALID"));
     }
 
     client.close().await;
@@ -2353,10 +2447,16 @@ async fn e2e_test_zero_quantity_order() {
         .await;
 
     let response = client.recv_type("OrderRejected").await;
-    assert!(response.is_some(), "Should receive OrderRejected for zero qty");
+    assert!(
+        response.is_some(),
+        "Should receive OrderRejected for zero qty"
+    );
     if let Some(msg) = response {
         let p = msg.get("payload").unwrap();
-        assert_eq!(p.get("error_code").and_then(|v| v.as_str()), Some("INVALID_QTY"));
+        assert_eq!(
+            p.get("error_code").and_then(|v| v.as_str()),
+            Some("INVALID_QTY")
+        );
     }
 
     client.close().await;
@@ -2396,10 +2496,16 @@ async fn e2e_test_invalid_limit_price() {
         .await;
 
     let response = client.recv_type("OrderRejected").await;
-    assert!(response.is_some(), "Should receive OrderRejected for zero price");
+    assert!(
+        response.is_some(),
+        "Should receive OrderRejected for zero price"
+    );
     if let Some(msg) = response {
         let p = msg.get("payload").unwrap();
-        assert_eq!(p.get("error_code").and_then(|v| v.as_str()), Some("INVALID_PRICE"));
+        assert_eq!(
+            p.get("error_code").and_then(|v| v.as_str()),
+            Some("INVALID_PRICE")
+        );
     }
 
     client.close().await;
@@ -2469,7 +2575,10 @@ async fn e2e_test_unauthenticated_order() {
 
     // Should get Error response
     let response = client.recv_type("Error").await;
-    assert!(response.is_some(), "Should receive Error for unauthenticated order");
+    assert!(
+        response.is_some(),
+        "Should receive Error for unauthenticated order"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -2505,7 +2614,10 @@ async fn e2e_test_cancel_nonexistent_order() {
 
     // Should get Error response
     let response = client.recv_type("Error").await;
-    assert!(response.is_some(), "Should receive Error for non-existent order");
+    assert!(
+        response.is_some(),
+        "Should receive Error for non-existent order"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -2545,7 +2657,10 @@ async fn e2e_test_order_unknown_symbol() {
 
     // Should get OrderRejected
     let response = client.recv_type("OrderRejected").await;
-    assert!(response.is_some(), "Should receive OrderRejected for unknown symbol");
+    assert!(
+        response.is_some(),
+        "Should receive OrderRejected for unknown symbol"
+    );
 
     client.close().await;
     server.shutdown().await;
@@ -2728,7 +2843,11 @@ async fn e2e_test_ioc_no_fill() {
         let p = msg.get("payload").unwrap();
         // IOC that doesn't fill should have Cancelled status
         let status = p.get("status").and_then(|v| v.as_str()).unwrap_or("");
-        assert!(status == "Cancelled" || status == "Open", "IOC with no match should be Cancelled or Open: {}", status);
+        assert!(
+            status == "Cancelled" || status == "Open",
+            "IOC with no match should be Cancelled or Open: {}",
+            status
+        );
     }
 
     client.close().await;

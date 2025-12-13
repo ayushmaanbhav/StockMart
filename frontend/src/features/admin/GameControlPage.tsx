@@ -292,9 +292,16 @@ const CircuitBreakerSection: React.FC = () => {
     const [threshold, setThreshold] = useState(String(GAME_DEFAULTS.CIRCUIT_BREAKER_THRESHOLD));
     const [duration, setDuration] = useState(String(GAME_DEFAULTS.CIRCUIT_BREAKER_DURATION));
     const [isSaving, setIsSaving] = useState(false);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+    // Update current time periodically for active halts calculation
+    React.useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const activeHalts = Object.entries(haltedSymbols).filter(
-        ([, until]) => until > Date.now()
+        ([, until]) => until > currentTime
     );
 
     const handleSave = () => {

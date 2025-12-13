@@ -2,8 +2,8 @@
 //!
 //! Candlestick data for price charts.
 
-use serde::{Deserialize, Serialize};
 use crate::domain::common::{Price, Quantity};
+use serde::{Deserialize, Serialize};
 
 /// OHLCV candlestick data for charting.
 ///
@@ -50,5 +50,4 @@ impl Candle {
         self.close = price;
         self.volume += volume;
     }
-
 }

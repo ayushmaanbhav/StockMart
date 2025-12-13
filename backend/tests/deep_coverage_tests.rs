@@ -6,6 +6,7 @@
 mod common;
 
 use common::*;
+use std::sync::Arc;
 use stockmart_backend::domain::models::{
     Company, Order, OrderSide, OrderStatus, OrderType, Portfolio, TimeInForce, Trade, User,
 };
@@ -14,7 +15,6 @@ use stockmart_backend::infrastructure::id_generator::IdGenerators;
 use stockmart_backend::service::event_log::{EventLogger, GameEvent, PositionSnapshot};
 use stockmart_backend::service::orders::OrdersService;
 use stockmart_backend::service::trade_history::TradeHistoryService;
-use std::sync::Arc;
 
 // =============================================================================
 // ORDERBOOK DEEP TESTS
@@ -283,9 +283,14 @@ async fn test_orders_service_admin_with_names() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "ADMORD", "Admin Order Co").await;
 
-    let user_id =
-        create_test_user_with_portfolio(&state, "ADMORDUSER", "Admin Order User", dollars(100_000), vec![])
-            .await;
+    let user_id = create_test_user_with_portfolio(
+        &state,
+        "ADMORDUSER",
+        "Admin Order User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
     place_limit_buy(&state, user_id, &symbol, 10, dollars(100))
@@ -426,14 +431,21 @@ async fn test_trade_history_pagination() {
 /// Test User::new creates correct initial state
 #[tokio::test]
 async fn test_user_new() {
-    let user = User::new("REG001".to_string(), "Test User".to_string(), "password123".to_string());
+    let user = User::new(
+        "REG001".to_string(),
+        "Test User".to_string(),
+        "password123".to_string(),
+    );
 
     assert_eq!(user.regno, "REG001");
     assert_eq!(user.name, "Test User");
     assert!(!user.banned);
     assert!(user.chat_enabled);
     assert!(user.portfolio.is_empty());
-    assert_eq!(user.money, stockmart_backend::domain::constants::user::DEFAULT_STARTING_MONEY);
+    assert_eq!(
+        user.money,
+        stockmart_backend::domain::constants::user::DEFAULT_STARTING_MONEY
+    );
     assert_eq!(user.locked_money, 0);
     assert_eq!(user.margin_locked, 0);
 }
@@ -805,14 +817,22 @@ async fn test_engine_full_settlement_cycle() {
     assert_eq!(seller_after.money, dollars(14_750));
 
     // Seller should have 50 shares left
-    let seller_pos = seller_after.portfolio.iter().find(|p| p.symbol == symbol).unwrap();
+    let seller_pos = seller_after
+        .portfolio
+        .iter()
+        .find(|p| p.symbol == symbol)
+        .unwrap();
     assert_eq!(seller_pos.qty, 50);
 
     // Buyer should have: initial_money - (50 * $95) = $20,000 - $4,750 = $15,250
     assert_eq!(buyer_after.money, dollars(15_250));
 
     // Buyer should have 50 shares
-    let buyer_pos = buyer_after.portfolio.iter().find(|p| p.symbol == symbol).unwrap();
+    let buyer_pos = buyer_after
+        .portfolio
+        .iter()
+        .find(|p| p.symbol == symbol)
+        .unwrap();
     assert_eq!(buyer_pos.qty, 50);
 }
 
@@ -1012,7 +1032,10 @@ async fn test_money_conservation() {
     // Calculate final total money (including locked)
     let seller_after = state.user_repo.find_by_id(seller).await.unwrap().unwrap();
     let buyer_after = state.user_repo.find_by_id(buyer).await.unwrap().unwrap();
-    let total_after = seller_after.money + seller_after.locked_money + buyer_after.money + buyer_after.locked_money;
+    let total_after = seller_after.money
+        + seller_after.locked_money
+        + buyer_after.money
+        + buyer_after.locked_money;
 
     // Money should be conserved
     assert_eq!(total_before, total_after);
@@ -1079,5 +1102,8 @@ async fn test_share_conservation() {
         .sum::<u64>();
 
     // Shares should be conserved
-    assert_eq!(seller_shares_before, seller_shares_after + buyer_shares_after);
+    assert_eq!(
+        seller_shares_before,
+        seller_shares_after + buyer_shares_after
+    );
 }

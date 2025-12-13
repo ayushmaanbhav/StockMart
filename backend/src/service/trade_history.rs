@@ -1,9 +1,9 @@
 //! Trade history service for tracking and querying executed trades.
 
-use std::sync::RwLock;
-use dashmap::DashMap;
 use crate::domain::models::{OrderSide, Trade, UserId};
 use crate::domain::ui_models::{TradeHistoryItem, TradeHistoryResponse};
+use dashmap::DashMap;
+use std::sync::RwLock;
 
 /// Extended trade record with additional context for history display
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ impl TradeHistoryService {
         let seller_side_str = match seller_side {
             OrderSide::Sell => "Sell".to_string(),
             OrderSide::Short => "Short".to_string(),
-            OrderSide::Buy => "Sell".to_string(),    // Shouldn't happen but fallback
+            OrderSide::Buy => "Sell".to_string(), // Shouldn't happen but fallback
         };
 
         let record = TradeRecord {
@@ -296,10 +296,7 @@ impl TradeHistoryService {
             price: record.trade.price,
             total_value: (record.trade.qty as i64) * record.trade.price,
             counterparty_id: Some(record.trade.maker_user_id), // For linking
-            counterparty_name: Some(format!(
-                "{} <-> {}",
-                record.buyer_name, record.seller_name
-            )),
+            counterparty_name: Some(format!("{} <-> {}", record.buyer_name, record.seller_name)),
             timestamp: record.trade.timestamp,
         }
     }
@@ -338,7 +335,11 @@ impl TradeHistoryService {
         symbol_filter: Option<&str>,
         page: u32,
         page_size: u32,
-    ) -> (Vec<crate::domain::ui_models::AdminTradeHistoryItem>, u64, bool) {
+    ) -> (
+        Vec<crate::domain::ui_models::AdminTradeHistoryItem>,
+        u64,
+        bool,
+    ) {
         let trades = self.trades.read().unwrap();
 
         // Apply filters

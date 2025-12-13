@@ -6,8 +6,8 @@ mod common;
 
 use common::*;
 use std::fs;
-use tempfile::TempDir;
 use stockmart_backend::infrastructure::id_generator::IdGenerator;
+use tempfile::TempDir;
 
 // =============================================================================
 // DATA PERSISTENCE TESTS (PERSIST-*)
@@ -67,7 +67,10 @@ async fn test_companies_saved_to_json() {
 
     // Verify file exists and contains companies
     let companies_path = format!("{}/companies.json", data_dir);
-    assert!(fs::metadata(&companies_path).is_ok(), "companies.json should exist");
+    assert!(
+        fs::metadata(&companies_path).is_ok(),
+        "companies.json should exist"
+    );
 
     let content = fs::read_to_string(&companies_path).unwrap();
     assert!(content.contains("AAPL"));
@@ -108,8 +111,10 @@ async fn test_load_users_on_startup() {
 
     // User should be loaded
     let users = state2.user_repo.all().await.unwrap();
-    assert!(users.iter().any(|u| u.regno == "LOADED_USER"),
-        "User should be restored from disk");
+    assert!(
+        users.iter().any(|u| u.regno == "LOADED_USER"),
+        "User should be restored from disk"
+    );
 }
 
 /// RECOVER-002: Load companies on startup
@@ -140,8 +145,10 @@ async fn test_load_companies_on_startup() {
 
     // Company should be loaded
     let companies = state2.company_repo.all().await.unwrap();
-    assert!(companies.iter().any(|c| c.symbol == "SAVED_CO"),
-        "Company should be restored from disk");
+    assert!(
+        companies.iter().any(|c| c.symbol == "SAVED_CO"),
+        "Company should be restored from disk"
+    );
 }
 
 /// RECOVER-005: Handle missing data files
@@ -218,8 +225,8 @@ async fn test_user_ids_monotonically_increase() {
 /// IDGEN-002: Order IDs unique across generator instance
 #[tokio::test]
 async fn test_order_ids_unique() {
-    use stockmart_backend::infrastructure::id_generator::IdGenerators;
     use std::collections::HashSet;
+    use stockmart_backend::infrastructure::id_generator::IdGenerators;
 
     let gens = IdGenerators::new();
     let mut ids = HashSet::new();
@@ -233,8 +240,8 @@ async fn test_order_ids_unique() {
 /// IDGEN-003: Trade IDs unique
 #[tokio::test]
 async fn test_trade_ids_unique() {
-    use stockmart_backend::infrastructure::id_generator::IdGenerators;
     use std::collections::HashSet;
+    use stockmart_backend::infrastructure::id_generator::IdGenerators;
 
     let gens = IdGenerators::new();
     let mut ids = HashSet::new();
@@ -248,8 +255,8 @@ async fn test_trade_ids_unique() {
 /// IDGEN-004: Thread-safe generation
 #[tokio::test]
 async fn test_thread_safe_id_generation() {
-    use stockmart_backend::infrastructure::id_generator::AtomicIdGenerator;
     use std::sync::Arc;
+    use stockmart_backend::infrastructure::id_generator::AtomicIdGenerator;
 
     let gen = Arc::new(AtomicIdGenerator::new());
     let mut handles = vec![];
@@ -271,7 +278,11 @@ async fn test_thread_safe_id_generation() {
     for handle in handles {
         let ids = handle.await.unwrap();
         for id in ids {
-            assert!(all_ids.insert(id), "ID {} should be unique across threads", id);
+            assert!(
+                all_ids.insert(id),
+                "ID {} should be unique across threads",
+                id
+            );
         }
     }
 
@@ -349,9 +360,13 @@ async fn test_roundtrip_user_data() {
 
     // Create user with portfolio
     let user_id = create_test_user_with_portfolio(
-        &state1, "ROUNDTRIP", "Round Trip User", dollars(50_000),
+        &state1,
+        "ROUNDTRIP",
+        "Round Trip User",
+        dollars(50_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     // Save
     let persistence1 = stockmart_backend::service::persistence::PersistenceService::new(
@@ -397,7 +412,12 @@ async fn test_roundtrip_company_data() {
     create_test_company(&state1, "ROUNDTRIP", "Round Trip Corp").await;
 
     // Modify the company (sector and volatility are mutable)
-    let mut company = state1.company_repo.find_by_symbol("ROUNDTRIP").await.unwrap().unwrap();
+    let mut company = state1
+        .company_repo
+        .find_by_symbol("ROUNDTRIP")
+        .await
+        .unwrap()
+        .unwrap();
     company.sector = "Modified Sector".to_string();
     company.volatility = 500;
     state1.company_repo.save(company).await.unwrap();
@@ -420,7 +440,11 @@ async fn test_roundtrip_company_data() {
     persistence2.load_data().await;
 
     // Verify company data preserved
-    let loaded_company = state2.company_repo.find_by_symbol("ROUNDTRIP").await.unwrap();
+    let loaded_company = state2
+        .company_repo
+        .find_by_symbol("ROUNDTRIP")
+        .await
+        .unwrap();
     assert!(loaded_company.is_some(), "Company should be loaded");
 
     let company = loaded_company.unwrap();
@@ -451,7 +475,10 @@ async fn test_persistence_empty_state() {
     let companies_content = fs::read_to_string(format!("{}/companies.json", data_dir)).unwrap();
 
     assert!(users_content.trim() == "[]", "Users should be empty array");
-    assert!(companies_content.trim() == "[]", "Companies should be empty array");
+    assert!(
+        companies_content.trim() == "[]",
+        "Companies should be empty array"
+    );
 }
 
 /// Test: Multiple save operations are idempotent

@@ -18,9 +18,9 @@ async fn test_max_valid_price() {
     let symbol = create_test_company(&state, "MAXP", "Max Price Co").await;
 
     // User with lots of money
-    let buyer = create_test_user_with_portfolio(
-        &state, "MAXBUYER", "Max Buyer", i64::MAX / 2, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "MAXBUYER", "Max Buyer", i64::MAX / 2, vec![])
+            .await;
 
     open_market(&state);
 
@@ -29,7 +29,11 @@ async fn test_max_valid_price() {
     let result = place_limit_buy(&state, buyer, &symbol, 1, high_price).await;
 
     // This should work with sufficient funds
-    assert!(result.is_ok(), "High price order should be accepted: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "High price order should be accepted: {:?}",
+        result
+    );
 }
 
 /// VAL-PRICE-002: Price at i64::MAX boundary
@@ -38,9 +42,8 @@ async fn test_price_at_max_boundary() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "MAXB", "Max Boundary Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "MAXBND", "Max Boundary", i64::MAX, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "MAXBND", "Max Boundary", i64::MAX, vec![]).await;
 
     open_market(&state);
 
@@ -61,9 +64,9 @@ async fn test_negative_price_boundary() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "NEGP", "Neg Price Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "NEGBUYER", "Neg Buyer", dollars(100_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "NEGBUYER", "Neg Buyer", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
@@ -85,8 +88,13 @@ async fn test_zero_price_boundary() {
     let symbol = create_test_company(&state, "ZEROP", "Zero Price Co").await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "ZEROBUYER", "Zero Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ZEROBUYER",
+        "Zero Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -107,20 +115,33 @@ async fn test_price_precision() {
     let symbol = create_test_company(&state, "PRECP", "Precision Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "PRECSELL", "Precision Seller", dollars(10_000),
+        &state,
+        "PRECSELL",
+        "Precision Seller",
+        dollars(10_000),
         vec![("PRECP".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "PRECBUY", "Precision Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "PRECBUY",
+        "Precision Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Price with sub-cent precision (PRICE_SCALE = 10000, so $1.0001)
     let precise_price = 10001; // $1.0001
 
-    place_limit_sell(&state, seller, &symbol, 10, precise_price).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, precise_price).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, precise_price)
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, precise_price)
+        .await
+        .unwrap();
 
     // Verify trade executed at precise price
     let history = state.trade_history.get_recent_symbol_trades(&symbol, 10);
@@ -141,9 +162,8 @@ async fn test_max_quantity() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "MAXQ", "Max Qty Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "MAXQTY", "Max Qty Buyer", i64::MAX, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "MAXQTY", "Max Qty Buyer", i64::MAX, vec![]).await;
 
     open_market(&state);
 
@@ -160,9 +180,9 @@ async fn test_large_quantity_overflow() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "OVFQ", "Overflow Qty Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "OVFQTY", "Overflow Qty Buyer", i64::MAX, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "OVFQTY", "Overflow Qty Buyer", i64::MAX, vec![])
+            .await;
 
     open_market(&state);
 
@@ -179,17 +199,28 @@ async fn test_minimum_quantity() {
     let symbol = create_test_company(&state, "MINQ", "Min Qty Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "MINQSELL", "Min Qty Seller", dollars(10_000),
+        &state,
+        "MINQSELL",
+        "Min Qty Seller",
+        dollars(10_000),
         vec![("MINQ".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "MINQBUY", "Min Qty Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "MINQBUY",
+        "Min Qty Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Minimum valid quantity
-    place_limit_sell(&state, seller, &symbol, 1, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 1, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 1, dollars(100)).await;
 
     assert!(result.is_ok());
@@ -208,8 +239,13 @@ async fn test_zero_quantity_handling() {
     let symbol = create_test_company(&state, "ZEROQ", "Zero Qty Co").await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "ZEROQUSER", "Zero Qty User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ZEROQUSER",
+        "Zero Qty User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -233,8 +269,13 @@ async fn test_nonexistent_symbol() {
     let state = create_test_state().await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "NOSYM", "No Symbol User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "NOSYM",
+        "No Symbol User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -252,8 +293,13 @@ async fn test_empty_symbol() {
     let state = create_test_state().await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "EMPTYSYM", "Empty Symbol User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "EMPTYSYM",
+        "Empty Symbol User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -272,17 +318,23 @@ async fn test_symbol_special_chars() {
     let symbol = create_test_company(&state, "A-B.C", "Special Symbol Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SPECSELL", "Spec Seller", dollars(10_000),
+        &state,
+        "SPECSELL",
+        "Spec Seller",
+        dollars(10_000),
         vec![("A-B.C".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "SPECBUY", "Spec Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "SPECBUY", "Spec Buyer", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
     // Should work with special characters
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
 
     assert!(result.is_ok());
@@ -298,16 +350,22 @@ async fn test_very_long_symbol() {
     let symbol = create_test_company(&state, &long_symbol, "Long Symbol Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "LONGSELL", "Long Seller", dollars(10_000),
+        &state,
+        "LONGSELL",
+        "Long Seller",
+        dollars(10_000),
         vec![(long_symbol.clone(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "LONGBUY", "Long Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "LONGBUY", "Long Buyer", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
 
     assert!(result.is_ok());
@@ -323,16 +381,22 @@ async fn test_unicode_symbol() {
     let symbol = create_test_company(&state, unicode_symbol, "Moon Rocket Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "MOONSELL", "Moon Seller", dollars(10_000),
+        &state,
+        "MOONSELL",
+        "Moon Seller",
+        dollars(10_000),
         vec![(unicode_symbol.to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "MOONBUY", "Moon Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "MOONBUY", "Moon Buyer", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
 
     assert!(result.is_ok());
@@ -381,8 +445,13 @@ async fn test_market_closed_orders_rejected() {
     let symbol = create_test_company(&state, "CLOSED", "Closed Market Co").await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "CLOSEBUY", "Close Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "CLOSEBUY",
+        "Close Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     close_market(&state);
 
@@ -399,9 +468,9 @@ async fn test_market_open_orders_accepted() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "OPENED", "Opened Market Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "OPENBUY", "Open Buyer", dollars(100_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "OPENBUY", "Open Buyer", dollars(100_000), vec![])
+            .await;
 
     close_market(&state);
 
@@ -426,8 +495,13 @@ async fn test_rapid_market_state_changes() {
     let symbol = create_test_company(&state, "RAPID", "Rapid Change Co").await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "RAPIDBUY", "Rapid Buyer", dollars(1_000_000), vec![],
-    ).await;
+        &state,
+        "RAPIDBUY",
+        "Rapid Buyer",
+        dollars(1_000_000),
+        vec![],
+    )
+    .await;
 
     // Rapid state changes
     for _ in 0..100 {
@@ -456,9 +530,9 @@ async fn test_exact_funds_for_order() {
     let symbol = create_test_company(&state, "EXACT", "Exact Funds Co").await;
 
     // Exactly enough for 10 shares at $100 = $1000
-    let buyer = create_test_user_with_portfolio(
-        &state, "EXACTBUY", "Exact Buyer", dollars(1_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "EXACTBUY", "Exact Buyer", dollars(1_000), vec![])
+            .await;
 
     open_market(&state);
 
@@ -480,8 +554,13 @@ async fn test_one_cent_short() {
 
     // One cent short: need $1000.00, have $999.99
     let buyer = create_test_user_with_portfolio(
-        &state, "SHORTBUY", "Short Buyer", dollars(1_000) - 100, vec![], // -$0.01
-    ).await;
+        &state,
+        "SHORTBUY",
+        "Short Buyer",
+        dollars(1_000) - 100,
+        vec![], // -$0.01
+    )
+    .await;
 
     open_market(&state);
 
@@ -500,8 +579,13 @@ async fn test_multiple_orders_exhaust_funds() {
 
     // Exactly enough for 2 orders of 5 shares each at $100 = $1000
     let buyer = create_test_user_with_portfolio(
-        &state, "EXHAUSTBUY", "Exhaust Buyer", dollars(1_000), vec![],
-    ).await;
+        &state,
+        "EXHAUSTBUY",
+        "Exhaust Buyer",
+        dollars(1_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -524,17 +608,23 @@ async fn test_funds_release_and_reuse() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "REUSE", "Reuse Funds Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "REUSEBUY", "Reuse Buyer", dollars(1_000), vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "REUSEBUY", "Reuse Buyer", dollars(1_000), vec![])
+            .await;
 
     open_market(&state);
 
     // Place order consuming all funds
-    let order_id = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Cancel order
-    state.engine.cancel_order(buyer, &symbol, order_id).await.unwrap();
+    state
+        .engine
+        .cancel_order(buyer, &symbol, order_id)
+        .await
+        .unwrap();
 
     // Funds should be released, new order should work
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
@@ -553,9 +643,13 @@ async fn test_exact_shares_for_sell() {
 
     // Exactly 100 shares
     let seller = create_test_user_with_portfolio(
-        &state, "EXACTSELL", "Exact Seller", dollars(10_000),
+        &state,
+        "EXACTSELL",
+        "Exact Seller",
+        dollars(10_000),
         vec![("EXACTS".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
@@ -572,9 +666,13 @@ async fn test_one_share_short() {
 
     // 99 shares, trying to sell 100
     let seller = create_test_user_with_portfolio(
-        &state, "SHORTSELL", "Short Seller", dollars(10_000),
+        &state,
+        "SHORTSELL",
+        "Short Seller",
+        dollars(10_000),
         vec![("SHORTSH".to_string(), 99)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
@@ -590,9 +688,13 @@ async fn test_multiple_sells_exhaust_shares() {
     let symbol = create_test_company(&state, "EXHAUSTS", "Exhaust Shares Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "EXHAUSTSELL", "Exhaust Seller", dollars(10_000),
+        &state,
+        "EXHAUSTSELL",
+        "Exhaust Seller",
+        dollars(10_000),
         vec![("EXHAUSTS".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
@@ -619,9 +721,9 @@ async fn test_price_qty_overflow() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "OVFLW", "Overflow Co").await;
 
-    let buyer = create_test_user_with_portfolio(
-        &state, "OVFLWBUY", "Overflow Buyer", i64::MAX, vec![],
-    ).await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "OVFLWBUY", "Overflow Buyer", i64::MAX, vec![])
+            .await;
 
     open_market(&state);
 
@@ -650,12 +752,21 @@ async fn test_trade_value_overflow() {
     let symbol = create_test_company(&state, "TRADOVF", "Trade Overflow Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRADOVFSELL", "Trade Overflow Seller", dollars(10_000),
+        &state,
+        "TRADOVFSELL",
+        "Trade Overflow Seller",
+        dollars(10_000),
         vec![("TRADOVF".to_string(), 1_000_000)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRADOVFBUY", "Trade Overflow Buyer", i64::MAX / 2, vec![],
-    ).await;
+        &state,
+        "TRADOVFBUY",
+        "Trade Overflow Buyer",
+        i64::MAX / 2,
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -663,7 +774,9 @@ async fn test_trade_value_overflow() {
     let price = 1_000_000 * dollars(1); // $1,000,000
     let qty = 100u64;
 
-    place_limit_sell(&state, seller, &symbol, qty, price).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, qty, price)
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, qty, price).await;
 
     if result.is_ok() {
@@ -684,11 +797,20 @@ async fn test_cannot_trade_bankrupt_company() {
     let symbol = create_test_company(&state, "BNKRPT", "Bankrupt Co").await;
 
     // Mark company as bankrupt
-    state.admin.set_company_bankrupt(&symbol, true).await.unwrap();
+    state
+        .admin
+        .set_company_bankrupt(&symbol, true)
+        .await
+        .unwrap();
 
     let buyer = create_test_user_with_portfolio(
-        &state, "BNKRPTBUY", "Bankrupt Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "BNKRPTBUY",
+        "Bankrupt Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -709,21 +831,40 @@ async fn test_unbankrupt_company_tradeable() {
     let symbol = create_test_company(&state, "UNBKRPT", "Unbankrupt Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "UNBKRPTSELL", "Unbankrupt Seller", dollars(10_000),
+        &state,
+        "UNBKRPTSELL",
+        "Unbankrupt Seller",
+        dollars(10_000),
         vec![("UNBKRPT".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "UNBKRPTBUY", "Unbankrupt Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "UNBKRPTBUY",
+        "Unbankrupt Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     // Mark bankrupt then unmark
-    state.admin.set_company_bankrupt(&symbol, true).await.unwrap();
-    state.admin.set_company_bankrupt(&symbol, false).await.unwrap();
+    state
+        .admin
+        .set_company_bankrupt(&symbol, true)
+        .await
+        .unwrap();
+    state
+        .admin
+        .set_company_bankrupt(&symbol, false)
+        .await
+        .unwrap();
 
     open_market(&state);
 
     // Should be able to trade again
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
 
     assert!(result.is_ok());
@@ -741,8 +882,13 @@ async fn test_concurrent_orders_same_user() {
 
     // User with limited funds
     let buyer = create_test_user_with_portfolio(
-        &state, "CONCBUY", "Concurrent Buyer", dollars(1_000), vec![],
-    ).await;
+        &state,
+        "CONCBUY",
+        "Concurrent Buyer",
+        dollars(1_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
@@ -760,15 +906,27 @@ async fn test_concurrent_orders_same_user() {
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
-    let successes = results.iter().filter(|r| r.as_ref().map(|r| r.is_ok()).unwrap_or(false)).count();
-    let failures = results.iter().filter(|r| r.as_ref().map(|r| r.is_err()).unwrap_or(true)).count();
+    let successes = results
+        .iter()
+        .filter(|r| r.as_ref().map(|r| r.is_ok()).unwrap_or(false))
+        .count();
+    let failures = results
+        .iter()
+        .filter(|r| r.as_ref().map(|r| r.is_err()).unwrap_or(true))
+        .count();
 
     // Verify invariant: total locked should not exceed original balance
     let user = state.user_repo.find_by_id(buyer).await.unwrap().unwrap();
-    assert!(user.locked_money <= dollars(1_000),
-        "Locked money {} should not exceed original balance $1000", user.locked_money);
+    assert!(
+        user.locked_money <= dollars(1_000),
+        "Locked money {} should not exceed original balance $1000",
+        user.locked_money
+    );
 
-    println!("Concurrent orders: {} succeeded, {} failed", successes, failures);
+    println!(
+        "Concurrent orders: {} succeeded, {} failed",
+        successes, failures
+    );
 }
 
 /// VAL-CONCURRENT-002: Two users competing for same liquidity
@@ -778,20 +936,36 @@ async fn test_concurrent_competing_buyers() {
     let symbol = create_test_company(&state, "COMPETE", "Compete Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "COMPSELL", "Compete Seller", dollars(10_000),
+        &state,
+        "COMPSELL",
+        "Compete Seller",
+        dollars(10_000),
         vec![("COMPETE".to_string(), 10)], // Only 10 shares available
-    ).await;
+    )
+    .await;
     let buyer1 = create_test_user_with_portfolio(
-        &state, "COMPBUY1", "Compete Buyer 1", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "COMPBUY1",
+        "Compete Buyer 1",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
     let buyer2 = create_test_user_with_portfolio(
-        &state, "COMPBUY2", "Compete Buyer 2", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "COMPBUY2",
+        "Compete Buyer 2",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Seller offers 10 shares
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Both buyers try to buy 10 shares at same time
     let state1 = state.clone();
@@ -805,14 +979,39 @@ async fn test_concurrent_competing_buyers() {
     );
 
     // Combined fills should equal available shares
-    let buyer1_shares = state.user_repo.find_by_id(buyer1).await.unwrap().unwrap()
-        .portfolio.iter().find(|p| p.symbol == symbol).map(|p| p.qty).unwrap_or(0);
-    let buyer2_shares = state.user_repo.find_by_id(buyer2).await.unwrap().unwrap()
-        .portfolio.iter().find(|p| p.symbol == symbol).map(|p| p.qty).unwrap_or(0);
+    let buyer1_shares = state
+        .user_repo
+        .find_by_id(buyer1)
+        .await
+        .unwrap()
+        .unwrap()
+        .portfolio
+        .iter()
+        .find(|p| p.symbol == symbol)
+        .map(|p| p.qty)
+        .unwrap_or(0);
+    let buyer2_shares = state
+        .user_repo
+        .find_by_id(buyer2)
+        .await
+        .unwrap()
+        .unwrap()
+        .portfolio
+        .iter()
+        .find(|p| p.symbol == symbol)
+        .map(|p| p.qty)
+        .unwrap_or(0);
 
-    assert_eq!(buyer1_shares + buyer2_shares, 10,
+    assert_eq!(
+        buyer1_shares + buyer2_shares,
+        10,
         "Total shares should equal available liquidity (buyer1: {}, buyer2: {})",
-        buyer1_shares, buyer2_shares);
+        buyer1_shares,
+        buyer2_shares
+    );
 
-    println!("Buyer 1 got {} shares, Buyer 2 got {} shares", buyer1_shares, buyer2_shares);
+    println!(
+        "Buyer 1 got {} shares, Buyer 2 got {} shares",
+        buyer1_shares, buyer2_shares
+    );
 }

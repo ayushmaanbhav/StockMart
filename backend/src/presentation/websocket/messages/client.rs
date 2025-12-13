@@ -3,7 +3,7 @@
 //! This module defines all messages that clients can send to the server.
 //! Messages are tagged with a "type" field for JSON serialization.
 
-#![allow(dead_code)]  // Message utility methods for logging and validation
+#![allow(dead_code)] // Message utility methods for logging and validation
 
 use serde::Deserialize;
 
@@ -17,29 +17,22 @@ pub enum ClientMessage {
     // =========================================================================
     // AUTHENTICATION
     // =========================================================================
-
     /// Authenticate with user ID token (for reconnection/stored sessions)
-    Auth {
-        token: String
-    },
+    Auth { token: String },
 
     /// Login with registration number and password
-    Login {
-        regno: String,
-        password: String
-    },
+    Login { regno: String, password: String },
 
     /// Register a new user
     Register {
         regno: String,
         name: String,
-        password: String
+        password: String,
     },
 
     // =========================================================================
     // TRADING
     // =========================================================================
-
     /// Place a trading order
     PlaceOrder {
         symbol: String,
@@ -55,30 +48,23 @@ pub enum ClientMessage {
     },
 
     /// Cancel an existing order
-    CancelOrder {
-        symbol: String,
-        order_id: u64
-    },
+    CancelOrder { symbol: String, order_id: u64 },
 
     // =========================================================================
     // MARKET DATA
     // =========================================================================
-
     /// Subscribe to market data for a symbol
-    Subscribe {
-        symbol: String
-    },
+    Subscribe { symbol: String },
 
     /// Request order book depth
     GetDepth {
         symbol: String,
-        levels: Option<usize>
+        levels: Option<usize>,
     },
 
     // =========================================================================
     // PORTFOLIO & HISTORY
     // =========================================================================
-
     /// Request current portfolio
     GetPortfolio,
 
@@ -99,7 +85,6 @@ pub enum ClientMessage {
     // =========================================================================
     // SYNC & STATE
     // =========================================================================
-
     /// Request full state sync (on connect/reconnect)
     RequestSync {
         /// Optional component name for partial sync, None for full sync
@@ -115,16 +100,12 @@ pub enum ClientMessage {
     // =========================================================================
     // SOCIAL
     // =========================================================================
-
     /// Send chat message
-    Chat {
-        message: String
-    },
+    Chat { message: String },
 
     // =========================================================================
     // ADMIN
     // =========================================================================
-
     /// Admin actions (requires admin privileges)
     ///
     /// Supported actions:
@@ -141,13 +122,12 @@ pub enum ClientMessage {
     /// - "GetDashboardMetrics" - no payload
     AdminAction {
         action: String,
-        payload: serde_json::Value
+        payload: serde_json::Value,
     },
 
     // =========================================================================
     // SYSTEM
     // =========================================================================
-
     /// Ping for keepalive
     Ping {},
 }
@@ -230,7 +210,9 @@ mod tests {
 
     #[test]
     fn test_requires_auth() {
-        let auth = ClientMessage::Auth { token: "123".to_string() };
+        let auth = ClientMessage::Auth {
+            token: "123".to_string(),
+        };
         assert!(!auth.requires_auth());
 
         let order = ClientMessage::PlaceOrder {

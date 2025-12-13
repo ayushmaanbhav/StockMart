@@ -19,6 +19,18 @@ import { useGameStore } from '../../store/gameStore';
 import websocketService from '../../services/websocket';
 import { Button, Badge, Modal } from '../../components/common';
 
+// Sort icon component - defined outside to avoid recreation during render
+interface TraderSortIconProps {
+    field: 'rank' | 'name' | 'netWorth';
+    sortField: 'rank' | 'name' | 'netWorth';
+    sortOrder: 'asc' | 'desc';
+}
+
+const TraderSortIcon: React.FC<TraderSortIconProps> = ({ field, sortField, sortOrder }) => {
+    if (sortField !== field) return null;
+    return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+};
+
 interface TraderRowProps {
     entry: {
         rank: number;
@@ -256,11 +268,6 @@ export const TradersPage: React.FC = () => {
         });
     };
 
-    const SortIcon: React.FC<{ field: 'rank' | 'name' | 'netWorth' }> = ({ field }) => {
-        if (sortField !== field) return null;
-        return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
-    };
-
     return (
         <div className="traders-page">
             {/* Header */}
@@ -334,7 +341,7 @@ export const TradersPage: React.FC = () => {
                                 >
                                     <div className="flex items-center gap-1">
                                         Rank
-                                        <SortIcon field="rank" />
+                                        <TraderSortIcon field="rank" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th
@@ -343,7 +350,7 @@ export const TradersPage: React.FC = () => {
                                 >
                                     <div className="flex items-center gap-1">
                                         Trader
-                                        <SortIcon field="name" />
+                                        <TraderSortIcon field="name" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th
@@ -352,7 +359,7 @@ export const TradersPage: React.FC = () => {
                                 >
                                     <div className="flex items-center gap-1">
                                         Net Worth
-                                        <SortIcon field="netWorth" />
+                                        <TraderSortIcon field="netWorth" sortField={sortField} sortOrder={sortOrder} />
                                     </div>
                                 </th>
                                 <th>Change</th>

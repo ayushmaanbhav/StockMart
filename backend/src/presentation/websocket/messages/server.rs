@@ -3,19 +3,18 @@
 //! This module defines all messages that the server can send to clients.
 //! Messages are tagged with a "type" field for JSON serialization.
 
-#![allow(dead_code)]  // Message utility methods for type introspection
+#![allow(dead_code)] // Message utility methods for type introspection
 
-use serde::Serialize;
+use crate::domain::error::{DomainError, ErrorResponse, MarketError, TradingError, UserError};
 use crate::domain::models::{Candle, ChatMessage, Portfolio};
-use crate::domain::error::{TradingError, UserError, MarketError, DomainError, ErrorResponse};
 use crate::domain::ui_models::{
-    AdminDashboardMetrics, AdminOpenOrderUI, AdminTradeHistoryItem,
-    CandleUI, FullStateSyncPayload, LeaderboardEntryUI,
-    MarketIndexUI, NewsItemUI, OpenOrderUI, OrderbookUI, PortfolioItemUI,
+    AdminDashboardMetrics, AdminOpenOrderUI, AdminTradeHistoryItem, CandleUI, FullStateSyncPayload,
+    LeaderboardEntryUI, MarketIndexUI, NewsItemUI, OpenOrderUI, OrderbookUI, PortfolioItemUI,
     TradeHistoryItem,
 };
 use crate::service::leaderboard::LeaderboardEntry;
 use crate::service::news::NewsItem;
+use serde::Serialize;
 
 /// Company info for the company list
 #[derive(Debug, Serialize, Clone)]
@@ -58,12 +57,11 @@ impl From<&crate::config::CurrencyConfig> for CurrencyConfigPayload {
 /// actively sent yet. The frontend expects all these message types.
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "payload")]
-#[allow(dead_code)]  // Variants are part of the API contract with frontend
+#[allow(dead_code)] // Variants are part of the API contract with frontend
 pub enum ServerMessage {
     // =========================================================================
     // AUTHENTICATION RESPONSES
     // =========================================================================
-
     /// Authentication successful
     AuthSuccess {
         user_id: u64,
@@ -76,9 +74,7 @@ pub enum ServerMessage {
     },
 
     /// Authentication failed
-    AuthFailed {
-        reason: String
-    },
+    AuthFailed { reason: String },
 
     /// Registration successful
     RegisterSuccess {
@@ -91,19 +87,14 @@ pub enum ServerMessage {
     },
 
     /// Registration failed
-    RegisterFailed {
-        reason: String
-    },
+    RegisterFailed { reason: String },
 
     /// Session kicked (another session took over)
-    SessionKicked {
-        reason: String
-    },
+    SessionKicked { reason: String },
 
     // =========================================================================
     // ORDER RESPONSES
     // =========================================================================
-
     /// Order acknowledged
     OrderAck {
         order_id: u64,
@@ -120,14 +111,11 @@ pub enum ServerMessage {
     },
 
     /// Order cancelled
-    OrderCancelled {
-        order_id: u64
-    },
+    OrderCancelled { order_id: u64 },
 
     // =========================================================================
     // REAL-TIME MARKET UPDATES
     // =========================================================================
-
     /// Trade executed
     TradeUpdate {
         symbol: String,
@@ -137,34 +125,25 @@ pub enum ServerMessage {
     },
 
     /// Candlestick update
-    CandleUpdate {
-        symbol: String,
-        candle: Candle
-    },
+    CandleUpdate { symbol: String, candle: Candle },
 
     /// Order book depth update
     DepthUpdate {
         symbol: String,
-        bids: Vec<(i64, u64)>,  // (price, qty)
+        bids: Vec<(i64, u64)>, // (price, qty)
         asks: Vec<(i64, u64)>,
         spread: Option<i64>,
     },
 
     /// Market index update (legacy format)
-    IndexUpdate {
-        name: String,
-        value: i64
-    },
+    IndexUpdate { name: String, value: i64 },
 
     /// UI-ready index update with change data
-    IndexUpdateUI {
-        index: MarketIndexUI,
-    },
+    IndexUpdateUI { index: MarketIndexUI },
 
     // =========================================================================
     // PORTFOLIO UPDATES
     // =========================================================================
-
     /// Portfolio update (legacy format)
     PortfolioUpdate {
         money: i64,
@@ -186,14 +165,11 @@ pub enum ServerMessage {
     },
 
     /// Open orders list update
-    OpenOrdersUpdate {
-        orders: Vec<OpenOrderUI>,
-    },
+    OpenOrdersUpdate { orders: Vec<OpenOrderUI> },
 
     // =========================================================================
     // MARKET EVENTS
     // =========================================================================
-
     /// Circuit breaker triggered
     CircuitBreaker {
         symbol: String,
@@ -202,42 +178,28 @@ pub enum ServerMessage {
     },
 
     /// Market status changed
-    MarketStatus {
-        is_open: bool
-    },
+    MarketStatus { is_open: bool },
 
     // =========================================================================
     // SOCIAL & NEWS
     // =========================================================================
-
     /// News item
-    NewsUpdate {
-        news: NewsItem
-    },
+    NewsUpdate { news: NewsItem },
 
     /// Leaderboard update (legacy)
-    LeaderboardUpdate {
-        entries: Vec<LeaderboardEntry>
-    },
+    LeaderboardUpdate { entries: Vec<LeaderboardEntry> },
 
     /// UI-ready leaderboard update
-    LeaderboardUpdateUI {
-        entries: Vec<LeaderboardEntryUI>,
-    },
+    LeaderboardUpdateUI { entries: Vec<LeaderboardEntryUI> },
 
     /// Chat message
-    ChatUpdate {
-        message: ChatMessage
-    },
+    ChatUpdate { message: ChatMessage },
 
     // =========================================================================
     // CONFIGURATION & SYSTEM
     // =========================================================================
-
     /// List of all tradeable companies
-    CompanyList {
-        companies: Vec<CompanyInfo>
-    },
+    CompanyList { companies: Vec<CompanyInfo> },
 
     /// Public config for initialization
     Config {
@@ -252,34 +214,23 @@ pub enum ServerMessage {
     },
 
     /// General error
-    Error {
-        code: String,
-        message: String
-    },
+    Error { code: String, message: String },
 
     /// Pong response
-    Pong {
-        timestamp: i64
-    },
+    Pong { timestamp: i64 },
 
     /// System announcement
-    System {
-        message: String
-    },
+    System { message: String },
 
     // =========================================================================
     // FULL STATE SYNC
     // =========================================================================
-
     /// Full state sync - sent on connect/reconnect
-    FullStateSync {
-        payload: FullStateSyncPayload,
-    },
+    FullStateSync { payload: FullStateSyncPayload },
 
     // =========================================================================
     // COMPONENT SYNC RESPONSES
     // =========================================================================
-
     /// Portfolio sync response
     PortfolioSync {
         sync_id: u64,
@@ -324,10 +275,7 @@ pub enum ServerMessage {
     },
 
     /// News sync response
-    NewsSync {
-        sync_id: u64,
-        news: Vec<NewsItemUI>,
-    },
+    NewsSync { sync_id: u64, news: Vec<NewsItemUI> },
 
     /// Chat sync response
     ChatSync {
@@ -338,7 +286,6 @@ pub enum ServerMessage {
     // =========================================================================
     // TRADE HISTORY
     // =========================================================================
-
     /// Trade history response (for user's trades)
     TradeHistory {
         trades: Vec<TradeHistoryItem>,
@@ -357,7 +304,6 @@ pub enum ServerMessage {
     // =========================================================================
     // ADMIN RESPONSES
     // =========================================================================
-
     /// Admin: All trades with filters (enhanced with both parties)
     AdminTradeHistory {
         trades: Vec<AdminTradeHistoryItem>,
@@ -374,9 +320,7 @@ pub enum ServerMessage {
     },
 
     /// Admin: Dashboard metrics
-    AdminDashboardMetrics {
-        metrics: AdminDashboardMetrics,
-    },
+    AdminDashboardMetrics { metrics: AdminDashboardMetrics },
 
     /// Admin: Orderbook view with individual orders
     AdminOrderbook {
@@ -490,10 +434,13 @@ impl ServerMessage {
 
     /// Check if this is an error response
     pub fn is_error(&self) -> bool {
-        matches!(self, ServerMessage::Error { .. }
-            | ServerMessage::AuthFailed { .. }
-            | ServerMessage::RegisterFailed { .. }
-            | ServerMessage::OrderRejected { .. })
+        matches!(
+            self,
+            ServerMessage::Error { .. }
+                | ServerMessage::AuthFailed { .. }
+                | ServerMessage::RegisterFailed { .. }
+                | ServerMessage::OrderRejected { .. }
+        )
     }
 }
 
@@ -538,7 +485,10 @@ mod tests {
     #[test]
     fn test_is_error() {
         assert!(ServerMessage::error("ERR", "msg").is_error());
-        assert!(ServerMessage::AuthFailed { reason: "x".to_string() }.is_error());
+        assert!(ServerMessage::AuthFailed {
+            reason: "x".to_string()
+        }
+        .is_error());
         assert!(!ServerMessage::Pong { timestamp: 0 }.is_error());
     }
 }

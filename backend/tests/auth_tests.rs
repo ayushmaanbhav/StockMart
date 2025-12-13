@@ -21,7 +21,10 @@ async fn test_register_new_user_valid() {
     let user_id = create_test_user(&state, "REG001", "Test User", "password123").await;
 
     // Verify user was created
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -63,9 +66,13 @@ async fn test_register_initial_portfolio() {
             ("GOOGL".to_string(), 50),
             ("MSFT".to_string(), 75),
         ],
-    ).await;
+    )
+    .await;
 
-    let user = state.user_repo.find_by_id(user_id).await
+    let user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -88,8 +95,18 @@ async fn test_id_generator_continuity() {
     let user3_id = create_test_user(&state, "USER3", "User Three", "pass").await;
 
     // IDs should be monotonically increasing
-    assert!(user2_id > user1_id, "User IDs should increase: {} > {}", user2_id, user1_id);
-    assert!(user3_id > user2_id, "User IDs should increase: {} > {}", user3_id, user2_id);
+    assert!(
+        user2_id > user1_id,
+        "User IDs should increase: {} > {}",
+        user2_id,
+        user1_id
+    );
+    assert!(
+        user3_id > user2_id,
+        "User IDs should increase: {} > {}",
+        user3_id,
+        user2_id
+    );
 }
 
 // =============================================================================
@@ -104,7 +121,10 @@ async fn test_login_valid_credentials() {
     let user_id = create_test_user(&state, "LOGIN001", "Login Test", "correctpass").await;
 
     // Verify user exists and password matches
-    let user = state.user_repo.find_by_regno("LOGIN001").await
+    let user = state
+        .user_repo
+        .find_by_regno("LOGIN001")
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -119,7 +139,10 @@ async fn test_login_wrong_password() {
 
     create_test_user(&state, "WRONGPASS", "Test User", "correctpass").await;
 
-    let user = state.user_repo.find_by_regno("WRONGPASS").await
+    let user = state
+        .user_repo
+        .find_by_regno("WRONGPASS")
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -144,14 +167,24 @@ async fn test_login_banned_user() {
     let user_id = create_test_user(&state, "BANNED001", "Banned User", "pass").await;
 
     // Ban the user
-    let mut user = state.user_repo.find_by_id(user_id).await
+    let mut user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User should exist");
     user.banned = true;
-    state.user_repo.save(user.clone()).await.expect("Failed to save");
+    state
+        .user_repo
+        .save(user.clone())
+        .await
+        .expect("Failed to save");
 
     // Verify banned flag is set
-    let banned_user = state.user_repo.find_by_regno("BANNED001").await
+    let banned_user = state
+        .user_repo
+        .find_by_regno("BANNED001")
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -187,7 +220,8 @@ async fn test_token_uniqueness() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 0, // Unlimited tokens
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "UNIQUE001", "Unique User", "pass").await;
 
@@ -204,7 +238,8 @@ async fn test_token_max_limit_fifo() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 2,
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "FIFO001", "FIFO User", "pass").await;
 
@@ -221,9 +256,18 @@ async fn test_token_max_limit_fifo() {
     assert_eq!(revoked3[0], token1);
 
     // Verify token states
-    assert!(state.tokens.validate_token(&token1).is_none(), "Token1 should be revoked");
-    assert!(state.tokens.validate_token(&token2).is_some(), "Token2 should be valid");
-    assert!(state.tokens.validate_token(&token3).is_some(), "Token3 should be valid");
+    assert!(
+        state.tokens.validate_token(&token1).is_none(),
+        "Token1 should be revoked"
+    );
+    assert!(
+        state.tokens.validate_token(&token2).is_some(),
+        "Token2 should be valid"
+    );
+    assert!(
+        state.tokens.validate_token(&token3).is_some(),
+        "Token3 should be valid"
+    );
 }
 
 /// SM-TOKEN-004: Explicit token revocation
@@ -256,7 +300,8 @@ async fn test_token_revoke_all() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 0, // Unlimited
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "REVOKEALL", "Revoke All User", "pass").await;
 
@@ -337,7 +382,8 @@ async fn test_session_max_kicks_old() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 1,
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "MAXSESS", "Max Session User", "pass").await;
 
@@ -358,7 +404,8 @@ async fn test_session_unlimited() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 0, // Unlimited
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "UNLIMITED", "Unlimited User", "pass").await;
 
@@ -394,20 +441,22 @@ async fn test_session_concurrent_logins() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 2,
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "CONCURRENT", "Concurrent User", "pass").await;
 
     // Simulate concurrent logins
     let state_clone = state.clone();
-    let handles: Vec<_> = (0..5).map(|_| {
-        let state = state_clone.clone();
-        tokio::spawn(async move {
-            state.sessions.create_session(user_id)
+    let handles: Vec<_> = (0..5)
+        .map(|_| {
+            let state = state_clone.clone();
+            tokio::spawn(async move { state.sessions.create_session(user_id) })
         })
-    }).collect();
+        .collect();
 
-    let results: Vec<_> = futures::future::join_all(handles).await
+    let results: Vec<_> = futures::future::join_all(handles)
+        .await
         .into_iter()
         .map(|r| r.unwrap())
         .collect();
@@ -428,7 +477,8 @@ async fn test_session_count_accuracy() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 0, // Unlimited
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     assert_eq!(state.sessions.total_sessions(), 0);
 
@@ -464,7 +514,10 @@ async fn test_ban_user() {
     let user_id = create_test_user(&state, "BAN001", "To Be Banned", "pass").await;
 
     // Get user and ban
-    let mut user = state.user_repo.find_by_id(user_id).await
+    let mut user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -474,7 +527,10 @@ async fn test_ban_user() {
     state.user_repo.save(user).await.expect("Save failed");
 
     // Verify banned
-    let banned_user = state.user_repo.find_by_id(user_id).await
+    let banned_user = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
         .expect("DB error")
         .expect("User should exist");
 
@@ -561,6 +617,8 @@ async fn test_banned_user_token_revoked() {
     state.tokens.revoke_all_user_tokens(user_id);
 
     // Token should be invalid
-    assert!(state.tokens.validate_token(&token).is_none(),
-        "Banned user's token should be revoked");
+    assert!(
+        state.tokens.validate_token(&token).is_none(),
+        "Banned user's token should be revoked"
+    );
 }

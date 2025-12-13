@@ -121,8 +121,7 @@ pub struct GameConfig {
 
 fn default_admin_username() -> String {
     // Read from environment variable, or use a secure default that must be changed
-    std::env::var("STOCKMART_ADMIN_USERNAME")
-        .unwrap_or_else(|_| "admin".to_string())
+    std::env::var("STOCKMART_ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string())
 }
 
 fn default_admin_password() -> String {
@@ -192,20 +191,21 @@ impl ConfigService {
         debug!("Loading config from: {}", config_file);
 
         match std::fs::read_to_string(&config_file) {
-            Ok(contents) => {
-                match serde_json::from_str(&contents) {
-                    Ok(config) => {
-                        info!("Config loaded successfully from {}", config_file);
-                        config
-                    }
-                    Err(e) => {
-                        warn!("Failed to parse config file: {}. Using defaults.", e);
-                        GameConfig::default()
-                    }
+            Ok(contents) => match serde_json::from_str(&contents) {
+                Ok(config) => {
+                    info!("Config loaded successfully from {}", config_file);
+                    config
                 }
-            }
+                Err(e) => {
+                    warn!("Failed to parse config file: {}. Using defaults.", e);
+                    GameConfig::default()
+                }
+            },
             Err(e) => {
-                info!("Config file not found ({}): {}. Using defaults and creating file.", config_file, e);
+                info!(
+                    "Config file not found ({}): {}. Using defaults and creating file.",
+                    config_file, e
+                );
                 let default_config = GameConfig::default();
                 // Try to create default config file
                 if let Ok(json) = serde_json::to_string_pretty(&default_config) {
@@ -235,8 +235,14 @@ impl ConfigService {
                     debug!("Registration mode: Whitelist - regno {} is allowed", regno);
                     Ok(())
                 } else {
-                    warn!("Registration mode: Whitelist - regno {} is NOT allowed", regno);
-                    Err("Registration number not in allowed list. Contact administrator.".to_string())
+                    warn!(
+                        "Registration mode: Whitelist - regno {} is NOT allowed",
+                        regno
+                    );
+                    Err(
+                        "Registration number not in allowed list. Contact administrator."
+                            .to_string(),
+                    )
                 }
             }
             RegistrationMode::Disabled => {
@@ -586,7 +592,8 @@ impl Default for FrontendLabels {
                 register_button: "Create Account".to_string(),
                 no_account_text: "Don't have an account?".to_string(),
                 has_account_text: "Already have an account?".to_string(),
-                starting_balance_info: "You'll receive $100,000 in virtual cash to start trading!".to_string(),
+                starting_balance_info: "You'll receive $100,000 in virtual cash to start trading!"
+                    .to_string(),
             },
             trading: TradingLabels {
                 order_book: "Order Book".to_string(),
@@ -615,7 +622,8 @@ impl Default for FrontendLabels {
                 ioc: "IOC".to_string(),
                 ioc_full: "Immediate or Cancel".to_string(),
                 short_margin_warning: "Short selling requires 150% margin coverage".to_string(),
-                market_order_info: "Market orders execute immediately at best available price".to_string(),
+                market_order_info: "Market orders execute immediately at best available price"
+                    .to_string(),
                 no_liquidity: "No Market Liquidity".to_string(),
                 positions: "Positions".to_string(),
                 holdings: "Holdings".to_string(),

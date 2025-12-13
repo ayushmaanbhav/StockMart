@@ -27,7 +27,7 @@ pub async fn handle_subscribe(
     for candle in candles {
         let msg = ServerMessage::CandleUpdate {
             symbol: symbol.to_string(),
-            candle
+            candle,
         };
         send_message(sender, &msg).await;
     }
@@ -77,11 +77,10 @@ pub async fn handle_get_trade_history(
     _symbol: Option<String>,
 ) {
     if let Some(uid) = user_id {
-        let response = state.trade_history.get_user_trades(
-            uid,
-            page.unwrap_or(0),
-            page_size.unwrap_or(20),
-        );
+        let response =
+            state
+                .trade_history
+                .get_user_trades(uid, page.unwrap_or(0), page_size.unwrap_or(20));
 
         let msg = ServerMessage::TradeHistory {
             trades: response.trades,
@@ -104,7 +103,9 @@ pub async fn handle_get_stock_trades(
     symbol: &str,
     count: Option<usize>,
 ) {
-    let trades = state.trade_history.get_symbol_trades(symbol, count.unwrap_or(50));
+    let trades = state
+        .trade_history
+        .get_symbol_trades(symbol, count.unwrap_or(50));
     let msg = ServerMessage::StockTradeHistory {
         symbol: symbol.to_string(),
         trades,

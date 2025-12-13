@@ -7,13 +7,13 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::api::ws::AppState;
-use crate::domain::models::{Order, OrderSide, OrderType, TimeInForce, OrderStatus};
 use crate::domain::error::UserError;
+use crate::domain::models::{Order, OrderSide, OrderStatus, OrderType, TimeInForce};
 use crate::infrastructure::id_generator::IdGenerators;
 use crate::presentation::websocket::messages::ServerMessage;
 
-use super::send_message;
 use super::helpers::calculate_net_worth;
+use super::send_message;
 
 /// Handle placing a new order
 pub async fn handle_place_order(
@@ -149,7 +149,9 @@ pub async fn handle_place_order(
         }
         Err(e) => {
             // Log order rejected event
-            state.event_log.log_order_rejected(uid, &symbol, &side, qty, price, &e.to_string());
+            state
+                .event_log
+                .log_order_rejected(uid, &symbol, &side, qty, price, &e.to_string());
 
             // Use typed error code from EngineError
             let msg = ServerMessage::OrderRejected {
@@ -186,9 +188,13 @@ pub async fn handle_cancel_order(
             state.orders.remove_order(order_id);
 
             // Log order cancelled event
-            state.event_log.log_order_cancelled(order_id, uid, symbol, "User requested");
+            state
+                .event_log
+                .log_order_cancelled(order_id, uid, symbol, "User requested");
 
-            let msg = ServerMessage::OrderCancelled { order_id: cancelled.id };
+            let msg = ServerMessage::OrderCancelled {
+                order_id: cancelled.id,
+            };
             send_message(sender, &msg).await;
 
             // Send updated depth after cancellation

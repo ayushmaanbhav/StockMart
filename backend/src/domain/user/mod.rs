@@ -5,8 +5,8 @@
 //! - Portfolio entity
 //! - Role-based access control (RBAC)
 
-pub mod role;
 pub mod portfolio;
+pub mod role;
 pub mod user_entity;
 
 // Re-export role types (used by handlers)

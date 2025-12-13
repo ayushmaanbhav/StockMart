@@ -1,8 +1,8 @@
 //! Orders service for tracking open orders.
 
-use dashmap::DashMap;
-use crate::domain::models::{Order, OrderId, OrderStatus, UserId, Quantity};
+use crate::domain::models::{Order, OrderId, OrderStatus, Quantity, UserId};
 use crate::domain::ui_models::OpenOrderUI;
+use dashmap::DashMap;
 
 /// Service for tracking all open orders across all users.
 /// Provides fast lookup by user_id, order_id, and symbol for state sync.
@@ -112,12 +112,7 @@ impl OrdersService {
     pub fn get_user_order_count(&self, user_id: UserId) -> usize {
         self.user_orders
             .get(&user_id)
-            .map(|orders| {
-                orders
-                    .iter()
-                    .filter(|o| o.is_active())
-                    .count()
-            })
+            .map(|orders| orders.iter().filter(|o| o.is_active()).count())
             .unwrap_or(0)
     }
 
@@ -162,7 +157,10 @@ impl OrdersService {
         let mut all_orders = Vec::new();
         for entry in self.user_orders.iter() {
             let user_id = *entry.key();
-            let user_name = user_names.get(&user_id).cloned().unwrap_or_else(|| format!("User#{}", user_id));
+            let user_name = user_names
+                .get(&user_id)
+                .cloned()
+                .unwrap_or_else(|| format!("User#{}", user_id));
 
             for order in entry.value().iter() {
                 if !order.is_active() {
@@ -199,10 +197,7 @@ impl OrdersService {
     pub fn get_total_open_orders_count(&self) -> usize {
         let mut count = 0;
         for entry in self.user_orders.iter() {
-            count += entry.value()
-                .iter()
-                .filter(|o| o.is_active())
-                .count();
+            count += entry.value().iter().filter(|o| o.is_active()).count();
         }
         count
     }

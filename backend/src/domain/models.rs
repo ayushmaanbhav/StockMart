@@ -10,20 +10,16 @@
 //! - `domain::common::{UserId, CompanyId, OrderId, TradeId, Price, Quantity}`
 
 // Re-export type aliases from common module
-pub use crate::domain::common::{
-    UserId, CompanyId, OrderId, TradeId, Price, Quantity,
-};
+pub use crate::domain::common::{CompanyId, OrderId, Price, Quantity, TradeId, UserId};
 
 // Re-export PRICE_SCALE from constants
 pub use crate::domain::constants::PRICE_SCALE;
 
 // Re-export trading types
-pub use crate::domain::trading::{
-    Order, Trade, OrderType, OrderSide, OrderStatus, TimeInForce,
-};
+pub use crate::domain::trading::{Order, OrderSide, OrderStatus, OrderType, TimeInForce, Trade};
 
 // Re-export user types
-pub use crate::domain::user::{User, Portfolio};
+pub use crate::domain::user::{Portfolio, User};
 
 // Re-export market types
-pub use crate::domain::market::{Company, Candle, ChatMessage};
+pub use crate::domain::market::{Candle, ChatMessage, Company};

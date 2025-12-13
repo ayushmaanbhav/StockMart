@@ -3,7 +3,7 @@
 // Tracks active sessions per user to enforce single-session policy
 // ============================================
 
-#![allow(dead_code)]  // SessionInfo fields and query methods for session management
+#![allow(dead_code)] // SessionInfo fields and query methods for session management
 
 use dashmap::DashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -43,8 +43,14 @@ pub struct SessionManager {
 
 impl SessionManager {
     pub fn new(max_sessions_per_user: u32) -> Self {
-        info!("SessionManager initialized with max {} sessions per user",
-              if max_sessions_per_user == 0 { "unlimited".to_string() } else { max_sessions_per_user.to_string() });
+        info!(
+            "SessionManager initialized with max {} sessions per user",
+            if max_sessions_per_user == 0 {
+                "unlimited".to_string()
+            } else {
+                max_sessions_per_user.to_string()
+            }
+        );
         Self {
             user_sessions: DashMap::new(),
             sessions: DashMap::new(),
@@ -78,7 +84,10 @@ impl SessionManager {
                     user_sessions.remove(0);
                     self.sessions.remove(&old_session_id);
                     kicked_sessions.push(old_session_id);
-                    info!("Kicked old session {} for user {} (max sessions enforced)", old_session_id, user_id);
+                    info!(
+                        "Kicked old session {} for user {} (max sessions enforced)",
+                        old_session_id, user_id
+                    );
                 }
             }
         }
@@ -99,8 +108,12 @@ impl SessionManager {
             // Remove from user's session list
             if let Some(mut user_sessions) = self.user_sessions.get_mut(&session_info.user_id) {
                 user_sessions.retain(|&id| id != session_id);
-                debug!("Removed session {} for user {} ({} sessions remaining)",
-                       session_id, session_info.user_id, user_sessions.len());
+                debug!(
+                    "Removed session {} for user {} ({} sessions remaining)",
+                    session_id,
+                    session_info.user_id,
+                    user_sessions.len()
+                );
             }
         }
     }
@@ -112,14 +125,16 @@ impl SessionManager {
 
     /// Check if a user has any active sessions
     pub fn has_active_session(&self, user_id: UserId) -> bool {
-        self.user_sessions.get(&user_id)
+        self.user_sessions
+            .get(&user_id)
             .map(|sessions| !sessions.is_empty())
             .unwrap_or(false)
     }
 
     /// Get all sessions for a user
     pub fn get_user_sessions(&self, user_id: UserId) -> Vec<SessionId> {
-        self.user_sessions.get(&user_id)
+        self.user_sessions
+            .get(&user_id)
             .map(|s| s.clone())
             .unwrap_or_default()
     }
@@ -138,7 +153,10 @@ impl SessionManager {
 
     /// Get total unique users with active sessions
     pub fn total_users(&self) -> usize {
-        self.user_sessions.iter().filter(|r| !r.value().is_empty()).count()
+        self.user_sessions
+            .iter()
+            .filter(|r| !r.value().is_empty())
+            .count()
     }
 
     /// Get count of active sessions (alias for admin dashboard)

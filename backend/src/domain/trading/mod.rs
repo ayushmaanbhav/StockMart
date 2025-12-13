@@ -11,7 +11,7 @@ pub mod orderbook;
 pub mod trade;
 
 // Re-export order enums
-pub use order::{OrderType, OrderSide, OrderStatus, TimeInForce};
+pub use order::{OrderSide, OrderStatus, OrderType, TimeInForce};
 
 // Re-export entities
 pub use order_entity::Order;

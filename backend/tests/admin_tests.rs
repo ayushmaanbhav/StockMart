@@ -87,10 +87,19 @@ async fn test_admin_can_ban_trader() {
     assert!(admin.role.can_manage_users());
 
     // Ban via admin service
-    state.admin.set_trader_banned(trader_id, true).await.unwrap();
+    state
+        .admin
+        .set_trader_banned(trader_id, true)
+        .await
+        .unwrap();
 
     // Verify user is banned
-    let trader = state.user_repo.find_by_id(trader_id).await.unwrap().unwrap();
+    let trader = state
+        .user_repo
+        .find_by_id(trader_id)
+        .await
+        .unwrap()
+        .unwrap();
     assert!(trader.banned, "Trader should be banned");
 }
 
@@ -128,18 +137,17 @@ async fn test_orders_rejected_when_closed() {
     let state = create_test_state().await;
 
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
-    let user_id = create_test_user_with_portfolio(
-        &state,
-        "TRADER004",
-        "Trader",
-        dollars(100_000),
-        vec![],
-    ).await;
+    let user_id =
+        create_test_user_with_portfolio(&state, "TRADER004", "Trader", dollars(100_000), vec![])
+            .await;
 
     close_market(&state);
 
     let result = place_limit_buy(&state, user_id, &symbol, 10, dollars(100)).await;
-    assert!(result.is_err(), "Order should be rejected when market is closed");
+    assert!(
+        result.is_err(),
+        "Order should be rejected when market is closed"
+    );
 
     let err = result.unwrap_err();
     assert!(err.contains("MARKET_CLOSED") || err.to_lowercase().contains("closed"));
@@ -288,19 +296,33 @@ async fn test_init_game_resets_portfolios() {
 
     // Both should have roughly the same net worth (+/- variance)
     let base_price = dollars(100);
-    let nw1 = trader1.money + trader1.portfolio.iter()
-        .map(|p| p.qty as i64 * base_price)
-        .sum::<i64>();
-    let nw2 = trader2.money + trader2.portfolio.iter()
-        .map(|p| p.qty as i64 * base_price)
-        .sum::<i64>();
+    let nw1 = trader1.money
+        + trader1
+            .portfolio
+            .iter()
+            .map(|p| p.qty as i64 * base_price)
+            .sum::<i64>();
+    let nw2 = trader2.money
+        + trader2
+            .portfolio
+            .iter()
+            .map(|p| p.qty as i64 * base_price)
+            .sum::<i64>();
 
     // Allow 5% variance due to random share allocation
     let tolerance = target_networth / 20;
-    assert!((nw1 - target_networth).abs() < tolerance,
-        "Trader 1 net worth {} should be close to target {}", nw1, target_networth);
-    assert!((nw2 - target_networth).abs() < tolerance,
-        "Trader 2 net worth {} should be close to target {}", nw2, target_networth);
+    assert!(
+        (nw1 - target_networth).abs() < tolerance,
+        "Trader 1 net worth {} should be close to target {}",
+        nw1,
+        target_networth
+    );
+    assert!(
+        (nw2 - target_networth).abs() < tolerance,
+        "Trader 2 net worth {} should be close to target {}",
+        nw2,
+        target_networth
+    );
 }
 
 /// ADMIN-INIT-002: InitGame clears order books
@@ -312,11 +334,13 @@ async fn test_init_game_clears_orderbooks() {
     create_test_user(&state, "TRADER", "Trader", "pass").await;
 
     // Place some orders
-    let user = create_test_user_with_portfolio(
-        &state, "ORDERER", "Orderer", dollars(100_000), vec![],
-    ).await;
+    let user =
+        create_test_user_with_portfolio(&state, "ORDERER", "Orderer", dollars(100_000), vec![])
+            .await;
     open_market(&state);
-    place_limit_buy(&state, user, &symbol, 10, dollars(90)).await.ok();
+    place_limit_buy(&state, user, &symbol, 10, dollars(90))
+        .await
+        .ok();
 
     // Initialize game
     state.admin.init_game(dollars(100_000), 100).await.unwrap();
@@ -340,7 +364,10 @@ async fn test_init_game_closes_market() {
     state.admin.init_game(dollars(100_000), 100).await.unwrap();
 
     // Market should be closed after init
-    assert!(!is_market_open(&state), "Market should be closed after init_game");
+    assert!(
+        !is_market_open(&state),
+        "Market should be closed after init_game"
+    );
 }
 
 /// ADMIN-INIT-005: InitGame skips admin users
@@ -362,7 +389,11 @@ async fn test_init_game_skips_admins() {
 
     // Admin's money should be unchanged
     let admin = state.user_repo.find_by_id(admin_id).await.unwrap().unwrap();
-    assert_eq!(admin.money, dollars(999_999), "Admin portfolio should be unchanged");
+    assert_eq!(
+        admin.money,
+        dollars(999_999),
+        "Admin portfolio should be unchanged"
+    );
 }
 
 /// ADMIN-INIT-008: InitGame with no traders fails
@@ -422,7 +453,11 @@ async fn test_session_count() {
     state.sessions.create_session(user1);
     state.sessions.create_session(user2);
 
-    assert_eq!(state.sessions.total_sessions(), 2, "Should count active sessions");
+    assert_eq!(
+        state.sessions.total_sessions(),
+        2,
+        "Should count active sessions"
+    );
 }
 
 // =============================================================================
@@ -454,20 +489,27 @@ async fn test_create_duplicate_company() {
     let state = create_test_state().await;
 
     // Create first company via admin service
-    state.admin.create_company(
-        "DUP".to_string(),
-        "Duplicate Test".to_string(),
-        "Test".to_string(),
-        10,
-    ).await.unwrap();
+    state
+        .admin
+        .create_company(
+            "DUP".to_string(),
+            "Duplicate Test".to_string(),
+            "Test".to_string(),
+            10,
+        )
+        .await
+        .unwrap();
 
     // Try to create duplicate via admin service - should fail
-    let result = state.admin.create_company(
-        "DUP".to_string(),
-        "Duplicate Test 2".to_string(),
-        "Test".to_string(),
-        10,
-    ).await;
+    let result = state
+        .admin
+        .create_company(
+            "DUP".to_string(),
+            "Duplicate Test 2".to_string(),
+            "Test".to_string(),
+            10,
+        )
+        .await;
 
     assert!(result.is_err(), "Creating duplicate symbol should fail");
     assert!(result.unwrap_err().contains("already exists"));

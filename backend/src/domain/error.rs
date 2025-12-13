@@ -367,15 +367,27 @@ mod tests {
     fn test_trading_error_codes() {
         assert_eq!(TradingError::MarketClosed.error_code(), "MARKET_CLOSED");
         assert_eq!(
-            TradingError::InsufficientFunds { required: 100, available: 50 }.error_code(),
+            TradingError::InsufficientFunds {
+                required: 100,
+                available: 50
+            }
+            .error_code(),
             "INSUFFICIENT_FUNDS"
         );
         assert_eq!(
-            TradingError::InsufficientShares { required: 10, available: 5 }.error_code(),
+            TradingError::InsufficientShares {
+                required: 10,
+                available: 5
+            }
+            .error_code(),
             "INSUFFICIENT_SHARES"
         );
         assert_eq!(
-            TradingError::InsufficientMargin { required: 100, available: 50 }.error_code(),
+            TradingError::InsufficientMargin {
+                required: 100,
+                available: 50
+            }
+            .error_code(),
             "INSUFFICIENT_MARGIN"
         );
         assert_eq!(
@@ -383,15 +395,25 @@ mod tests {
             "ORDER_NOT_FOUND"
         );
         assert_eq!(
-            TradingError::InvalidOrder { reason: "test".to_string() }.error_code(),
+            TradingError::InvalidOrder {
+                reason: "test".to_string()
+            }
+            .error_code(),
             "INVALID_ORDER"
         );
         assert_eq!(
-            TradingError::SymbolNotFound { symbol: "AAPL".to_string() }.error_code(),
+            TradingError::SymbolNotFound {
+                symbol: "AAPL".to_string()
+            }
+            .error_code(),
             "SYMBOL_NOT_FOUND"
         );
         assert_eq!(
-            TradingError::TradingHalted { symbol: "AAPL".to_string(), until: 12345 }.error_code(),
+            TradingError::TradingHalted {
+                symbol: "AAPL".to_string(),
+                until: 12345
+            }
+            .error_code(),
             "TRADING_HALTED"
         );
         assert_eq!(TradingError::NotOrderOwner.error_code(), "NOT_ORDER_OWNER");
@@ -399,26 +421,45 @@ mod tests {
 
     #[test]
     fn test_trading_error_display() {
-        assert_eq!(TradingError::MarketClosed.to_string(), "Market is currently closed");
-        assert!(TradingError::InsufficientFunds { required: 100, available: 50 }
-            .to_string()
-            .contains("100"));
-        assert!(TradingError::InsufficientShares { required: 10, available: 5 }
-            .to_string()
-            .contains("10"));
+        assert_eq!(
+            TradingError::MarketClosed.to_string(),
+            "Market is currently closed"
+        );
+        assert!(TradingError::InsufficientFunds {
+            required: 100,
+            available: 50
+        }
+        .to_string()
+        .contains("100"));
+        assert!(TradingError::InsufficientShares {
+            required: 10,
+            available: 5
+        }
+        .to_string()
+        .contains("10"));
         assert!(TradingError::OrderNotFound { order_id: 123 }
             .to_string()
             .contains("123"));
-        assert!(TradingError::InvalidOrder { reason: "bad order".to_string() }
-            .to_string()
-            .contains("bad order"));
-        assert!(TradingError::SymbolNotFound { symbol: "XYZ".to_string() }
-            .to_string()
-            .contains("XYZ"));
-        assert!(TradingError::TradingHalted { symbol: "HALT".to_string(), until: 999 }
-            .to_string()
-            .contains("HALT"));
-        assert_eq!(TradingError::NotOrderOwner.to_string(), "Order does not belong to user");
+        assert!(TradingError::InvalidOrder {
+            reason: "bad order".to_string()
+        }
+        .to_string()
+        .contains("bad order"));
+        assert!(TradingError::SymbolNotFound {
+            symbol: "XYZ".to_string()
+        }
+        .to_string()
+        .contains("XYZ"));
+        assert!(TradingError::TradingHalted {
+            symbol: "HALT".to_string(),
+            until: 999
+        }
+        .to_string()
+        .contains("HALT"));
+        assert_eq!(
+            TradingError::NotOrderOwner.to_string(),
+            "Order does not belong to user"
+        );
     }
 
     // =========================================================================
@@ -432,32 +473,47 @@ mod tests {
             "USER_NOT_FOUND"
         );
         assert_eq!(
-            UserError::NotFoundByRegno { regno: "REG123".to_string() }.error_code(),
+            UserError::NotFoundByRegno {
+                regno: "REG123".to_string()
+            }
+            .error_code(),
             "USER_NOT_FOUND"
         );
         assert_eq!(
-            UserError::AuthFailed { reason: "bad password".to_string() }.error_code(),
+            UserError::AuthFailed {
+                reason: "bad password".to_string()
+            }
+            .error_code(),
             "AUTH_FAILED"
         );
+        assert_eq!(UserError::Banned { user_id: 1 }.error_code(), "USER_BANNED");
         assert_eq!(
-            UserError::Banned { user_id: 1 }.error_code(),
-            "USER_BANNED"
-        );
-        assert_eq!(
-            UserError::RegnoExists { regno: "REG123".to_string() }.error_code(),
+            UserError::RegnoExists {
+                regno: "REG123".to_string()
+            }
+            .error_code(),
             "REGNO_EXISTS"
         );
         assert_eq!(
-            UserError::InvalidRegistration { reason: "test".to_string() }.error_code(),
+            UserError::InvalidRegistration {
+                reason: "test".to_string()
+            }
+            .error_code(),
             "INVALID_REGISTRATION"
         );
         assert_eq!(
             UserError::SessionLimitExceeded { user_id: 1 }.error_code(),
             "SESSION_LIMIT"
         );
-        assert_eq!(UserError::NotAuthenticated.error_code(), "NOT_AUTHENTICATED");
         assert_eq!(
-            UserError::PermissionDenied { action: "admin".to_string() }.error_code(),
+            UserError::NotAuthenticated.error_code(),
+            "NOT_AUTHENTICATED"
+        );
+        assert_eq!(
+            UserError::PermissionDenied {
+                action: "admin".to_string()
+            }
+            .error_code(),
             "PERMISSION_DENIED"
         );
         assert_eq!(
@@ -468,16 +524,42 @@ mod tests {
 
     #[test]
     fn test_user_error_display() {
-        assert!(UserError::NotFound { user_id: 42 }.to_string().contains("42"));
-        assert!(UserError::NotFoundByRegno { regno: "X123".to_string() }.to_string().contains("X123"));
-        assert!(UserError::AuthFailed { reason: "wrong".to_string() }.to_string().contains("wrong"));
+        assert!(UserError::NotFound { user_id: 42 }
+            .to_string()
+            .contains("42"));
+        assert!(UserError::NotFoundByRegno {
+            regno: "X123".to_string()
+        }
+        .to_string()
+        .contains("X123"));
+        assert!(UserError::AuthFailed {
+            reason: "wrong".to_string()
+        }
+        .to_string()
+        .contains("wrong"));
         assert!(UserError::Banned { user_id: 99 }.to_string().contains("99"));
-        assert!(UserError::RegnoExists { regno: "DUP".to_string() }.to_string().contains("DUP"));
-        assert!(UserError::InvalidRegistration { reason: "empty".to_string() }.to_string().contains("empty"));
-        assert!(UserError::SessionLimitExceeded { user_id: 5 }.to_string().contains("5"));
+        assert!(UserError::RegnoExists {
+            regno: "DUP".to_string()
+        }
+        .to_string()
+        .contains("DUP"));
+        assert!(UserError::InvalidRegistration {
+            reason: "empty".to_string()
+        }
+        .to_string()
+        .contains("empty"));
+        assert!(UserError::SessionLimitExceeded { user_id: 5 }
+            .to_string()
+            .contains("5"));
         assert_eq!(UserError::NotAuthenticated.to_string(), "Not authenticated");
-        assert!(UserError::PermissionDenied { action: "delete".to_string() }.to_string().contains("delete"));
-        assert!(UserError::ChatDisabled { user_id: 7 }.to_string().contains("7"));
+        assert!(UserError::PermissionDenied {
+            action: "delete".to_string()
+        }
+        .to_string()
+        .contains("delete"));
+        assert!(UserError::ChatDisabled { user_id: 7 }
+            .to_string()
+            .contains("7"));
     }
 
     // =========================================================================
@@ -487,34 +569,69 @@ mod tests {
     #[test]
     fn test_market_error_codes() {
         assert_eq!(
-            MarketError::CompanyNotFound { symbol: "XYZ".to_string() }.error_code(),
+            MarketError::CompanyNotFound {
+                symbol: "XYZ".to_string()
+            }
+            .error_code(),
             "COMPANY_NOT_FOUND"
         );
         assert_eq!(
-            MarketError::CompanyBankrupt { symbol: "FAIL".to_string() }.error_code(),
+            MarketError::CompanyBankrupt {
+                symbol: "FAIL".to_string()
+            }
+            .error_code(),
             "COMPANY_BANKRUPT"
         );
         assert_eq!(
-            MarketError::InvalidSymbol { symbol: "123".to_string() }.error_code(),
+            MarketError::InvalidSymbol {
+                symbol: "123".to_string()
+            }
+            .error_code(),
             "INVALID_SYMBOL"
         );
         assert_eq!(
-            MarketError::NoMarketData { symbol: "NEW".to_string() }.error_code(),
+            MarketError::NoMarketData {
+                symbol: "NEW".to_string()
+            }
+            .error_code(),
             "NO_MARKET_DATA"
         );
         assert_eq!(
-            MarketError::SymbolExists { symbol: "AAPL".to_string() }.error_code(),
+            MarketError::SymbolExists {
+                symbol: "AAPL".to_string()
+            }
+            .error_code(),
             "SYMBOL_EXISTS"
         );
     }
 
     #[test]
     fn test_market_error_display() {
-        assert!(MarketError::CompanyNotFound { symbol: "GONE".to_string() }.to_string().contains("GONE"));
-        assert!(MarketError::CompanyBankrupt { symbol: "BROKE".to_string() }.to_string().contains("BROKE"));
-        assert!(MarketError::InvalidSymbol { symbol: "BAD".to_string() }.to_string().contains("BAD"));
-        assert!(MarketError::NoMarketData { symbol: "EMPTY".to_string() }.to_string().contains("EMPTY"));
-        assert!(MarketError::SymbolExists { symbol: "DUP".to_string() }.to_string().contains("DUP"));
+        assert!(MarketError::CompanyNotFound {
+            symbol: "GONE".to_string()
+        }
+        .to_string()
+        .contains("GONE"));
+        assert!(MarketError::CompanyBankrupt {
+            symbol: "BROKE".to_string()
+        }
+        .to_string()
+        .contains("BROKE"));
+        assert!(MarketError::InvalidSymbol {
+            symbol: "BAD".to_string()
+        }
+        .to_string()
+        .contains("BAD"));
+        assert!(MarketError::NoMarketData {
+            symbol: "EMPTY".to_string()
+        }
+        .to_string()
+        .contains("EMPTY"));
+        assert!(MarketError::SymbolExists {
+            symbol: "DUP".to_string()
+        }
+        .to_string()
+        .contains("DUP"));
     }
 
     // =========================================================================
@@ -524,12 +641,16 @@ mod tests {
     #[test]
     fn test_repository_error_display() {
         assert_eq!(RepositoryError::NotFound.to_string(), "Entity not found");
-        assert!(RepositoryError::SaveFailed { reason: "disk full".to_string() }
-            .to_string()
-            .contains("disk full"));
-        assert!(RepositoryError::LoadFailed { reason: "corrupt".to_string() }
-            .to_string()
-            .contains("corrupt"));
+        assert!(RepositoryError::SaveFailed {
+            reason: "disk full".to_string()
+        }
+        .to_string()
+        .contains("disk full"));
+        assert!(RepositoryError::LoadFailed {
+            reason: "corrupt".to_string()
+        }
+        .to_string()
+        .contains("corrupt"));
         assert!(RepositoryError::Serialization("parse error".to_string())
             .to_string()
             .contains("parse error"));
@@ -558,15 +679,21 @@ mod tests {
 
     #[test]
     fn test_config_error_display() {
-        assert!(ConfigError::FileNotFound { path: "/etc/app.conf".to_string() }
-            .to_string()
-            .contains("/etc/app.conf"));
-        assert!(ConfigError::Invalid { reason: "bad format".to_string() }
-            .to_string()
-            .contains("bad format"));
-        assert!(ConfigError::MissingField { field: "api_key".to_string() }
-            .to_string()
-            .contains("api_key"));
+        assert!(ConfigError::FileNotFound {
+            path: "/etc/app.conf".to_string()
+        }
+        .to_string()
+        .contains("/etc/app.conf"));
+        assert!(ConfigError::Invalid {
+            reason: "bad format".to_string()
+        }
+        .to_string()
+        .contains("bad format"));
+        assert!(ConfigError::MissingField {
+            field: "api_key".to_string()
+        }
+        .to_string()
+        .contains("api_key"));
     }
 
     // =========================================================================
@@ -589,7 +716,9 @@ mod tests {
 
     #[test]
     fn test_domain_error_from_market() {
-        let market_err = MarketError::CompanyNotFound { symbol: "XYZ".to_string() };
+        let market_err = MarketError::CompanyNotFound {
+            symbol: "XYZ".to_string(),
+        };
         let domain_err: DomainError = market_err.into();
         assert!(domain_err.to_string().contains("Market error"));
     }
@@ -603,7 +732,9 @@ mod tests {
 
     #[test]
     fn test_domain_error_from_config() {
-        let config_err = ConfigError::Invalid { reason: "test".to_string() };
+        let config_err = ConfigError::Invalid {
+            reason: "test".to_string(),
+        };
         let domain_err: DomainError = config_err.into();
         assert!(domain_err.to_string().contains("Config error"));
     }
@@ -636,7 +767,9 @@ mod tests {
 
     #[test]
     fn test_error_response_from_market() {
-        let err = MarketError::CompanyNotFound { symbol: "TEST".to_string() };
+        let err = MarketError::CompanyNotFound {
+            symbol: "TEST".to_string(),
+        };
         let resp: ErrorResponse = err.into();
         assert_eq!(resp.code, "COMPANY_NOT_FOUND");
     }
@@ -657,7 +790,9 @@ mod tests {
 
     #[test]
     fn test_error_response_from_domain_market() {
-        let err = DomainError::Market(MarketError::SymbolExists { symbol: "X".to_string() });
+        let err = DomainError::Market(MarketError::SymbolExists {
+            symbol: "X".to_string(),
+        });
         let resp: ErrorResponse = err.into();
         assert_eq!(resp.code, "SYMBOL_EXISTS");
     }
@@ -671,7 +806,9 @@ mod tests {
 
     #[test]
     fn test_error_response_from_domain_config() {
-        let err = DomainError::Config(ConfigError::Invalid { reason: "x".to_string() });
+        let err = DomainError::Config(ConfigError::Invalid {
+            reason: "x".to_string(),
+        });
         let resp: ErrorResponse = err.into();
         assert_eq!(resp.code, "CONFIG_ERROR");
     }
@@ -679,7 +816,10 @@ mod tests {
     // Test InsufficientMargin display
     #[test]
     fn test_insufficient_margin_display() {
-        let err = TradingError::InsufficientMargin { required: 500, available: 200 };
+        let err = TradingError::InsufficientMargin {
+            required: 500,
+            available: 200,
+        };
         assert!(err.to_string().contains("500"));
         assert!(err.to_string().contains("200"));
     }

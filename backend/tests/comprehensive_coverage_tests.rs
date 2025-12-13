@@ -144,7 +144,7 @@ async fn test_leaderboard_net_worth_with_positions() {
         &state,
         "LEADPOSUSER",
         "Leader Position User",
-        dollars(50_000), // $50k cash
+        dollars(50_000),                    // $50k cash
         vec![("LEADPOS".to_string(), 100)], // 100 shares
     )
     .await;
@@ -166,30 +166,15 @@ async fn test_leaderboard_ranking_changes() {
     let state = create_test_state().await;
 
     // Create users with different net worths
-    let _user1 = create_test_user_with_portfolio(
-        &state,
-        "RANK1",
-        "Rank User 1",
-        dollars(100_000),
-        vec![],
-    )
-    .await;
-    let _user2 = create_test_user_with_portfolio(
-        &state,
-        "RANK2",
-        "Rank User 2",
-        dollars(200_000),
-        vec![],
-    )
-    .await;
-    let _user3 = create_test_user_with_portfolio(
-        &state,
-        "RANK3",
-        "Rank User 3",
-        dollars(150_000),
-        vec![],
-    )
-    .await;
+    let _user1 =
+        create_test_user_with_portfolio(&state, "RANK1", "Rank User 1", dollars(100_000), vec![])
+            .await;
+    let _user2 =
+        create_test_user_with_portfolio(&state, "RANK2", "Rank User 2", dollars(200_000), vec![])
+            .await;
+    let _user3 =
+        create_test_user_with_portfolio(&state, "RANK3", "Rank User 3", dollars(150_000), vec![])
+            .await;
 
     // Get current leaderboard
     let leaderboard = state.leaderboard.get_current();
@@ -326,7 +311,14 @@ async fn test_event_logger_portfolio_update() {
         average_buy_price: dollars(150),
     }];
 
-    logger.log_portfolio_update(100, dollars(50_000), dollars(1_500), 0, positions, dollars(65_000));
+    logger.log_portfolio_update(
+        100,
+        dollars(50_000),
+        dollars(1_500),
+        0,
+        positions,
+        dollars(65_000),
+    );
 }
 
 /// Test EventLogger admin events
@@ -346,7 +338,11 @@ async fn test_event_logger_admin_events() {
     logger.log_trader_unbanned(100);
     logger.log_trader_chat_muted(100);
     logger.log_trader_chat_unmuted(100);
-    logger.log_circuit_breaker("AAPL", "10% price move", chrono::Utc::now().timestamp() + 60);
+    logger.log_circuit_breaker(
+        "AAPL",
+        "10% price move",
+        chrono::Utc::now().timestamp() + 60,
+    );
 }
 
 /// Test EventLogger chat logging (when enabled)
@@ -439,24 +435,27 @@ async fn test_engine_error_display() {
             EngineError::MarketClosed => EngineError::MarketClosed,
             EngineError::UserNotFound => EngineError::UserNotFound,
             EngineError::SymbolNotFound => EngineError::SymbolNotFound,
-            EngineError::InsufficientFunds { required, available } => {
-                EngineError::InsufficientFunds {
-                    required: *required,
-                    available: *available,
-                }
-            }
-            EngineError::InsufficientShares { required, available } => {
-                EngineError::InsufficientShares {
-                    required: *required,
-                    available: *available,
-                }
-            }
-            EngineError::InsufficientMargin { required, available } => {
-                EngineError::InsufficientMargin {
-                    required: *required,
-                    available: *available,
-                }
-            }
+            EngineError::InsufficientFunds {
+                required,
+                available,
+            } => EngineError::InsufficientFunds {
+                required: *required,
+                available: *available,
+            },
+            EngineError::InsufficientShares {
+                required,
+                available,
+            } => EngineError::InsufficientShares {
+                required: *required,
+                available: *available,
+            },
+            EngineError::InsufficientMargin {
+                required,
+                available,
+            } => EngineError::InsufficientMargin {
+                required: *required,
+                available: *available,
+            },
             EngineError::OrderNotFound => EngineError::OrderNotFound,
             EngineError::InternalError(s) => EngineError::InternalError(s.clone()),
         };
@@ -810,10 +809,9 @@ async fn test_trade_history_admin_view_with_filters() {
     assert!(total >= 1);
 
     // Admin view with symbol filter
-    let (trades2, _, _) =
-        state
-            .trade_history
-            .get_all_trades_admin(None, Some(&symbol), 0, 10);
+    let (trades2, _, _) = state
+        .trade_history
+        .get_all_trades_admin(None, Some(&symbol), 0, 10);
     assert!(!trades2.is_empty());
 
     // Admin view with both filters
@@ -851,9 +849,7 @@ async fn test_orders_service_update_nonexistent() {
     let state = create_test_state().await;
 
     // Should not panic
-    state
-        .orders
-        .update_order(99999, 50, OrderStatus::Partial);
+    state.orders.update_order(99999, 50, OrderStatus::Partial);
 }
 
 /// Test orders service get orders by symbol with no matches
@@ -883,7 +879,10 @@ async fn test_admin_set_chat_nonexistent_user() {
 async fn test_admin_set_bankrupt_nonexistent() {
     let state = create_test_state().await;
 
-    let result = state.admin.set_company_bankrupt("NOSUCHCOMPANY", true).await;
+    let result = state
+        .admin
+        .set_company_bankrupt("NOSUCHCOMPANY", true)
+        .await;
     assert!(result.is_err());
 }
 
@@ -1177,9 +1176,14 @@ async fn test_config_service_get_config() {
 #[tokio::test]
 async fn test_check_money_invariant_valid() {
     let state = create_test_state().await;
-    let user_id =
-        create_test_user_with_portfolio(&state, "INVMONEY", "Invariant Money", dollars(1000), vec![])
-            .await;
+    let user_id = create_test_user_with_portfolio(
+        &state,
+        "INVMONEY",
+        "Invariant Money",
+        dollars(1000),
+        vec![],
+    )
+    .await;
 
     let result = check_money_invariant(&state, user_id).await;
     assert!(result.is_ok());

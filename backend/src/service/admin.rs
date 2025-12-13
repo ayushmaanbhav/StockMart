@@ -1,13 +1,15 @@
 //! Admin service for administrative operations.
 
-#![allow(dead_code)]  // Service API includes utility methods for future admin features
+#![allow(dead_code)] // Service API includes utility methods for future admin features
 
-use crate::service::engine::MatchingEngine;
+use crate::domain::models::{
+    Order, OrderSide, OrderStatus, OrderType, Portfolio, TimeInForce, PRICE_SCALE,
+};
 use crate::domain::{CompanyRepository, UserRepository};
-use crate::domain::models::{Portfolio, PRICE_SCALE, Order, OrderType, OrderSide, OrderStatus, TimeInForce};
 use crate::infrastructure::id_generator::IdGenerators;
-use std::sync::Arc;
+use crate::service::engine::MatchingEngine;
 use rand::Rng;
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 pub struct AdminService {
@@ -33,29 +35,60 @@ impl AdminService {
         self.engine.set_market_open(open);
     }
 
-    pub async fn set_company_volatility(&self, symbol: &str, volatility: i64) -> Result<(), String> {
-        if let Some(mut company) = self.company_repo.find_by_symbol(symbol).await.map_err(|e| e.to_string())? {
+    pub async fn set_company_volatility(
+        &self,
+        symbol: &str,
+        volatility: i64,
+    ) -> Result<(), String> {
+        if let Some(mut company) = self
+            .company_repo
+            .find_by_symbol(symbol)
+            .await
+            .map_err(|e| e.to_string())?
+        {
             company.volatility = volatility;
-            self.company_repo.save(company).await.map_err(|e| e.to_string())?;
-            Ok(())
-        } else {
-            Err("Company not found".to_string())
-        }
-    }
-    
-    pub async fn set_company_bankrupt(&self, symbol: &str, bankrupt: bool) -> Result<(), String> {
-        if let Some(mut company) = self.company_repo.find_by_symbol(symbol).await.map_err(|e| e.to_string())? {
-            company.bankrupt = bankrupt;
-            self.company_repo.save(company).await.map_err(|e| e.to_string())?;
+            self.company_repo
+                .save(company)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(())
         } else {
             Err("Company not found".to_string())
         }
     }
 
-    pub async fn create_company(&self, symbol: String, name: String, sector: String, volatility: i64) -> Result<(), String> {
+    pub async fn set_company_bankrupt(&self, symbol: &str, bankrupt: bool) -> Result<(), String> {
+        if let Some(mut company) = self
+            .company_repo
+            .find_by_symbol(symbol)
+            .await
+            .map_err(|e| e.to_string())?
+        {
+            company.bankrupt = bankrupt;
+            self.company_repo
+                .save(company)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(())
+        } else {
+            Err("Company not found".to_string())
+        }
+    }
+
+    pub async fn create_company(
+        &self,
+        symbol: String,
+        name: String,
+        sector: String,
+        volatility: i64,
+    ) -> Result<(), String> {
         // Check if symbol already exists
-        if self.company_repo.symbol_exists(&symbol).await.map_err(|e| e.to_string())? {
+        if self
+            .company_repo
+            .symbol_exists(&symbol)
+            .await
+            .map_err(|e| e.to_string())?
+        {
             return Err(format!("Symbol {} already exists", symbol));
         }
 
@@ -70,7 +103,10 @@ impl AdminService {
             volatility,
         };
 
-        self.company_repo.create(company).await.map_err(|e| e.to_string())?;
+        self.company_repo
+            .create(company)
+            .await
+            .map_err(|e| e.to_string())?;
         self.engine.create_orderbook(symbol);
         Ok(())
     }
@@ -80,10 +116,20 @@ impl AdminService {
     /// - Starting cash is approximately half of net worth
     /// - Other half is randomly allocated shares from companies
     /// - All traders end up with the same total net worth
-    pub async fn init_game(&self, target_networth: i64, shares_per_trader_per_company: u64) -> Result<String, String> {
+    pub async fn init_game(
+        &self,
+        target_networth: i64,
+        shares_per_trader_per_company: u64,
+    ) -> Result<String, String> {
         info!("=== GAME INITIALIZATION STARTED ===");
-        info!("Target net worth per trader: ${}", target_networth / PRICE_SCALE);
-        info!("Base shares per company per trader: {}", shares_per_trader_per_company);
+        info!(
+            "Target net worth per trader: ${}",
+            target_networth / PRICE_SCALE
+        );
+        info!(
+            "Base shares per company per trader: {}",
+            shares_per_trader_per_company
+        );
 
         // Close market during initialization
         self.engine.set_market_open(false);
@@ -114,16 +160,21 @@ impl AdminService {
         let target_portfolio_value = target_networth / 2;
         let target_cash = target_networth - target_portfolio_value;
 
-        debug!("Target cash: ${}, Target portfolio value: ${}",
-               target_cash / PRICE_SCALE, target_portfolio_value / PRICE_SCALE);
+        debug!(
+            "Target cash: ${}, Target portfolio value: ${}",
+            target_cash / PRICE_SCALE,
+            target_portfolio_value / PRICE_SCALE
+        );
 
         // Pre-generate random variances for all users and companies (before async)
         // We'll adjust cash to ensure equal net worth despite random share allocation
         let variances: Vec<Vec<i64>> = {
             let mut rng = rand::thread_rng();
-            users.iter()
+            users
+                .iter()
                 .map(|_| {
-                    companies.iter()
+                    companies
+                        .iter()
                         .map(|_| rng.gen_range(-20i64..=20i64))
                         .collect()
                 })
@@ -154,7 +205,8 @@ impl AdminService {
             for (company_idx, company) in companies.iter().enumerate() {
                 // Add some randomness to share allocation (+/- 20%)
                 let variance = variances[user_idx][company_idx];
-                let adjusted_shares = ((shares_per_trader_per_company as i64 * (100 + variance)) / 100) as u64;
+                let adjusted_shares =
+                    ((shares_per_trader_per_company as i64 * (100 + variance)) / 100) as u64;
                 let final_shares = adjusted_shares.max(1); // At least 1 share
 
                 let share_value = (final_shares as i64) * base_price;
@@ -169,8 +221,12 @@ impl AdminService {
                     average_buy_price: base_price, // $100.00 per share at start
                 });
 
-                debug!("  {} allocated {} shares = ${}",
-                       company.symbol, final_shares, share_value / PRICE_SCALE);
+                debug!(
+                    "  {} allocated {} shares = ${}",
+                    company.symbol,
+                    final_shares,
+                    share_value / PRICE_SCALE
+                );
             }
 
             // Calculate cash needed to reach target net worth
@@ -180,14 +236,20 @@ impl AdminService {
             user.money = calculated_cash.max(0); // Ensure non-negative cash
 
             let actual_networth = user.money + total_portfolio_value;
-            info!("Trader {} (id={}): cash=${}, portfolio=${}, networth=${}",
-                  user.name, user.id,
-                  user.money / PRICE_SCALE,
-                  total_portfolio_value / PRICE_SCALE,
-                  actual_networth / PRICE_SCALE);
+            info!(
+                "Trader {} (id={}): cash=${}, portfolio=${}, networth=${}",
+                user.name,
+                user.id,
+                user.money / PRICE_SCALE,
+                total_portfolio_value / PRICE_SCALE,
+                actual_networth / PRICE_SCALE
+            );
 
             // Save updated user
-            self.user_repo.save(user.clone()).await.map_err(|e| e.to_string())?;
+            self.user_repo
+                .save(user.clone())
+                .await
+                .map_err(|e| e.to_string())?;
         }
 
         // Clear all order books
@@ -268,7 +330,12 @@ impl AdminService {
 
     /// Ban/unban a trader
     pub async fn set_trader_banned(&self, user_id: u64, banned: bool) -> Result<(), String> {
-        if let Some(mut user) = self.user_repo.find_by_id(user_id).await.map_err(|e| e.to_string())? {
+        if let Some(mut user) = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(|e| e.to_string())?
+        {
             user.banned = banned;
             self.user_repo.save(user).await.map_err(|e| e.to_string())?;
             Ok(())
@@ -279,7 +346,12 @@ impl AdminService {
 
     /// Enable/disable chat for a trader
     pub async fn set_trader_chat(&self, user_id: u64, enabled: bool) -> Result<(), String> {
-        if let Some(mut user) = self.user_repo.find_by_id(user_id).await.map_err(|e| e.to_string())? {
+        if let Some(mut user) = self
+            .user_repo
+            .find_by_id(user_id)
+            .await
+            .map_err(|e| e.to_string())?
+        {
             user.chat_enabled = enabled;
             self.user_repo.save(user).await.map_err(|e| e.to_string())?;
             Ok(())

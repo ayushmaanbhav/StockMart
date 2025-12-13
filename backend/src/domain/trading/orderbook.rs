@@ -1,9 +1,9 @@
 //! Order book implementation for price-time priority matching.
 
-use std::collections::{BTreeMap, HashMap, VecDeque};
-use crate::domain::trading::{Order, OrderSide, OrderStatus, OrderType, Trade, TimeInForce};
 use crate::domain::common::types::{Price, Quantity};
+use crate::domain::trading::{Order, OrderSide, OrderStatus, OrderType, TimeInForce, Trade};
 use crate::infrastructure::id_generator::IdGenerators;
+use std::collections::{BTreeMap, HashMap, VecDeque};
 
 #[derive(Debug)]
 pub struct OrderBook {
@@ -30,26 +30,24 @@ impl OrderBook {
     /// Returns (bids, asks) where each is a vec of (price, total_qty)
     pub fn get_depth(&self, levels: usize) -> (Vec<(Price, Quantity)>, Vec<(Price, Quantity)>) {
         // Bids: highest price first
-        let bids: Vec<(Price, Quantity)> = self.bids
+        let bids: Vec<(Price, Quantity)> = self
+            .bids
             .iter()
             .rev()
             .take(levels)
             .map(|(price, orders)| {
-                let total_qty: Quantity = orders.iter()
-                    .map(|o| o.qty - o.filled_qty)
-                    .sum();
+                let total_qty: Quantity = orders.iter().map(|o| o.qty - o.filled_qty).sum();
                 (*price, total_qty)
             })
             .collect();
 
         // Asks: lowest price first
-        let asks: Vec<(Price, Quantity)> = self.asks
+        let asks: Vec<(Price, Quantity)> = self
+            .asks
             .iter()
             .take(levels)
             .map(|(price, orders)| {
-                let total_qty: Quantity = orders.iter()
-                    .map(|o| o.qty - o.filled_qty)
-                    .sum();
+                let total_qty: Quantity = orders.iter().map(|o| o.qty - o.filled_qty).sum();
                 (*price, total_qty)
             })
             .collect();
@@ -77,7 +75,11 @@ impl OrderBook {
     }
 
     /// Add an order to the book with matching, respecting TimeInForce
-    pub fn add_order(&mut self, mut order: Order, time_in_force: TimeInForce) -> (Order, Vec<Trade>) {
+    pub fn add_order(
+        &mut self,
+        mut order: Order,
+        time_in_force: TimeInForce,
+    ) -> (Order, Vec<Trade>) {
         let mut trades = Vec::new();
 
         // 1. Try to match immediately
@@ -96,7 +98,9 @@ impl OrderBook {
                     order.status = OrderStatus::Cancelled;
                     tracing::debug!(
                         "IOC order {} cancelled: {} of {} filled",
-                        order.id, order.filled_qty, order.qty
+                        order.id,
+                        order.filled_qty,
+                        order.qty
                     );
                 }
                 TimeInForce::GTC => {
@@ -104,7 +108,9 @@ impl OrderBook {
                     self.insert_order(order.clone());
                     tracing::debug!(
                         "GTC order {} added to book: {} remaining at {}",
-                        order.id, order.qty - order.filled_qty, order.price
+                        order.id,
+                        order.qty - order.filled_qty,
+                        order.price
                     );
                 }
             }
@@ -271,7 +277,8 @@ impl OrderBook {
             &mut self.asks
         };
 
-        side_map.entry(order.price)
+        side_map
+            .entry(order.price)
             .or_insert_with(VecDeque::new)
             .push_back(order);
     }
@@ -306,12 +313,16 @@ impl OrderBook {
     /// Get total volume at all price levels
     #[allow(dead_code)] // Market data API for volume statistics
     pub fn total_volume(&self) -> (Quantity, Quantity) {
-        let bid_volume: Quantity = self.bids.values()
+        let bid_volume: Quantity = self
+            .bids
+            .values()
             .flat_map(|orders| orders.iter())
             .map(|o| o.qty - o.filled_qty)
             .sum();
 
-        let ask_volume: Quantity = self.asks.values()
+        let ask_volume: Quantity = self
+            .asks
+            .values()
             .flat_map(|orders| orders.iter())
             .map(|o| o.qty - o.filled_qty)
             .sum();
@@ -338,7 +349,8 @@ impl OrderBook {
             &mut self.asks
         };
 
-        side_map.entry(order.price)
+        side_map
+            .entry(order.price)
             .or_insert_with(VecDeque::new)
             .push_back(order);
     }

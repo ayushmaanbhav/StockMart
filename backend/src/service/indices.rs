@@ -1,11 +1,11 @@
 use crate::domain::ui_models::MarketIndexUI;
-use crate::service::market::MarketService;
 use crate::domain::CompanyRepository;
+use crate::service::market::MarketService;
 use dashmap::DashMap;
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
-use serde::{Serialize, Deserialize};
 
 /// IndexValue for individual index queries
 #[allow(dead_code)] // API type for direct index queries
@@ -68,7 +68,8 @@ impl IndicesService {
 
     async fn calculate_indices(&self) {
         if let Ok(companies) = self.company_repo.all().await {
-            let mut sector_sums: std::collections::HashMap<String, (i64, i64)> = std::collections::HashMap::new();
+            let mut sector_sums: std::collections::HashMap<String, (i64, i64)> =
+                std::collections::HashMap::new();
             let mut total_market_price = 0i64;
             let mut total_companies = 0i64;
             let mut updated_indices: Vec<MarketIndexUI> = Vec::new();
@@ -141,7 +142,8 @@ impl IndicesService {
     /// Create a UI-ready index with change calculation
     fn create_index_ui(&self, name: &str, value: i64, timestamp: i64) -> MarketIndexUI {
         // Get previous value and calculate change
-        let previous_value = self.previous_values
+        let previous_value = self
+            .previous_values
             .insert(name.to_string(), value)
             .unwrap_or(value); // First time: use current value (no change)
 

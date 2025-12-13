@@ -37,7 +37,8 @@ export const RegisterPage: React.FC = () => {
     // Clear errors on input change
     useEffect(() => {
         if (error) clearError();
-        setLocalError('');
+        // Use queueMicrotask to avoid synchronous setState in effect body
+        queueMicrotask(() => setLocalError(''));
     }, [regno, name, password, confirmPassword, clearError, error]);
 
     const handleBlur = (field: string) => {

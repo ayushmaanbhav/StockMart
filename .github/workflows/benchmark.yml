@@ -1,0 +1,119 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Run benchmarks
+        run: |
+          if [ -f benches/*.rs ] || [ -d benches ]; then
+            cargo bench --all-features -- --output-format bencher | tee benchmark-results.txt
+          else
+            echo "No benchmarks found"
+            echo "No benchmarks configured" > benchmark-results.txt
+          fi
+        working-directory: backend
+        continue-on-error: true
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: backend/benchmark-results.txt
+          fail-on-alert: false
+          alert-threshold: '150%'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+        continue-on-error: true
+
+  compile-time:
+    name: Compile Time Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Clean build for timing
+        run: cargo clean
+        working-directory: backend
+
+      - name: Measure debug build time
+        run: |
+          echo "### Compile Time" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          START=$(date +%s)
+          cargo build 2>&1
+          END=$(date +%s)
+          DEBUG_TIME=$((END - START))
+          echo "- Debug build: ${DEBUG_TIME}s" >> $GITHUB_STEP_SUMMARY
+        working-directory: backend
+
+      - name: Clean for release build
+        run: cargo clean
+        working-directory: backend
+
+      - name: Measure release build time
+        run: |
+          START=$(date +%s)
+          cargo build --release 2>&1
+          END=$(date +%s)
+          RELEASE_TIME=$((END - START))
+          echo "- Release build: ${RELEASE_TIME}s" >> $GITHUB_STEP_SUMMARY
+        working-directory: backend
+
+  binary-size:
+    name: Binary Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Build release binary
+        run: cargo build --release
+        working-directory: backend
+
+      - name: Report binary size
+        run: |
+          echo "### Binary Size" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f target/release/stockmart ]; then
+            SIZE=$(du -h target/release/stockmart | cut -f1)
+            echo "- stockmart binary: $SIZE" >> $GITHUB_STEP_SUMMARY
+
+            # Check for size regression (example: warn if > 50MB)
+            SIZE_BYTES=$(du -b target/release/stockmart | cut -f1)
+            if [ "$SIZE_BYTES" -gt 52428800 ]; then
+              echo "::warning::Binary size exceeds 50MB"
+            fi
+          else
+            echo "Binary not found" >> $GITHUB_STEP_SUMMARY
+          fi
+        working-directory: backend

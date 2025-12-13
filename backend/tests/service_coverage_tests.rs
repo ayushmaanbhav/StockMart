@@ -19,12 +19,19 @@ async fn test_orders_service_add_order() {
     let symbol = create_test_company(&state, "ORDADD", "Order Add Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDADDUSER", "Order Add User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDADDUSER",
+        "Order Add User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Verify order is tracked in OrdersService
     let user_orders = state.orders.get_user_orders(user);
@@ -39,26 +46,42 @@ async fn test_orders_service_update_order() {
     let symbol = create_test_company(&state, "ORDUPD", "Order Update Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "ORDUPDSELL", "Order Update Seller", dollars(10_000),
+        &state,
+        "ORDUPDSELL",
+        "Order Update Seller",
+        dollars(10_000),
         vec![("ORDUPD".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "ORDUPDBUY", "Order Update Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDUPDBUY",
+        "Order Update Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Place sell order
-    let sell_id = place_limit_sell(&state, seller, &symbol, 100, dollars(100)).await.unwrap();
+    let sell_id = place_limit_sell(&state, seller, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
 
     // Partial fill
-    place_limit_buy(&state, buyer, &symbol, 30, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 30, dollars(100))
+        .await
+        .unwrap();
 
     // Check order was updated
     let sell_order = state.orders.get_order(sell_id);
     if let Some(order) = sell_order {
         assert_eq!(order.filled_qty, 30, "Order should be partially filled");
-        assert_eq!(order.status, stockmart_backend::domain::models::OrderStatus::Partial);
+        assert_eq!(
+            order.status,
+            stockmart_backend::domain::models::OrderStatus::Partial
+        );
     }
 }
 
@@ -69,20 +92,33 @@ async fn test_orders_service_remove_order() {
     let symbol = create_test_company(&state, "ORDREM", "Order Remove Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDREMUSER", "Order Remove User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDREMUSER",
+        "Order Remove User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Cancel order - should be removed from tracking
-    state.engine.cancel_order(user, &symbol, order_id).await.unwrap();
+    state
+        .engine
+        .cancel_order(user, &symbol, order_id)
+        .await
+        .unwrap();
 
     // Verify order is no longer tracked
     let user_orders = state.orders.get_user_orders(user);
-    assert!(user_orders.iter().all(|o| o.order_id != order_id),
-        "Cancelled order should be removed from tracking");
+    assert!(
+        user_orders.iter().all(|o| o.order_id != order_id),
+        "Cancelled order should be removed from tracking"
+    );
 }
 
 /// SVC-ORDERS-004: Get all orders
@@ -92,16 +128,30 @@ async fn test_orders_service_get_all_orders() {
     let symbol = create_test_company(&state, "ORDALL", "Order All Co").await;
 
     let user1 = create_test_user_with_portfolio(
-        &state, "ORDALL1", "Order All User 1", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDALL1",
+        "Order All User 1",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
     let user2 = create_test_user_with_portfolio(
-        &state, "ORDALL2", "Order All User 2", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDALL2",
+        "Order All User 2",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_buy(&state, user1, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, user2, &symbol, 20, dollars(99)).await.unwrap();
+    place_limit_buy(&state, user1, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user2, &symbol, 20, dollars(99))
+        .await
+        .unwrap();
 
     // Get all orders
     let all_orders = state.orders.get_all_orders();
@@ -116,13 +166,22 @@ async fn test_orders_service_get_orders_by_symbol() {
     let symbol2 = create_test_company(&state, "ORDSYM2", "Order Symbol 2").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDSYMUSER", "Order Symbol User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDSYMUSER",
+        "Order Symbol User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_buy(&state, user, &symbol1, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, user, &symbol2, 20, dollars(100)).await.unwrap();
+    place_limit_buy(&state, user, &symbol1, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user, &symbol2, 20, dollars(100))
+        .await
+        .unwrap();
 
     // Get orders for symbol1 only
     let symbol1_orders = state.orders.get_orders_by_symbol(&symbol1);
@@ -137,14 +196,25 @@ async fn test_orders_service_user_order_count() {
     let symbol = create_test_company(&state, "ORDCNT", "Order Count Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDCNTUSER", "Order Count User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDCNTUSER",
+        "Order Count User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, user, &symbol, 10, dollars(99)).await.unwrap();
-    place_limit_buy(&state, user, &symbol, 10, dollars(98)).await.unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(99))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(98))
+        .await
+        .unwrap();
 
     let count = state.orders.get_user_order_count(user);
     assert_eq!(count, 3, "User should have 3 orders");
@@ -157,13 +227,22 @@ async fn test_orders_service_clear_user_orders() {
     let symbol = create_test_company(&state, "ORDCLR", "Order Clear Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDCLRUSER", "Order Clear User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDCLRUSER",
+        "Order Clear User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, user, &symbol, 10, dollars(99)).await.unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(99))
+        .await
+        .unwrap();
 
     // Clear user's orders
     state.orders.clear_user_orders(user);
@@ -179,12 +258,19 @@ async fn test_orders_service_order_exists() {
     let symbol = create_test_company(&state, "ORDEXIST", "Order Exist Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDEXISTUSER", "Order Exist User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDEXISTUSER",
+        "Order Exist User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     assert!(state.orders.order_exists(order_id));
     assert!(!state.orders.order_exists(99999));
@@ -197,17 +283,33 @@ async fn test_orders_service_total_count() {
     let symbol = create_test_company(&state, "ORDTOT", "Order Total Co").await;
 
     let user1 = create_test_user_with_portfolio(
-        &state, "ORDTOT1", "Order Total 1", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDTOT1",
+        "Order Total 1",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
     let user2 = create_test_user_with_portfolio(
-        &state, "ORDTOT2", "Order Total 2", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDTOT2",
+        "Order Total 2",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_buy(&state, user1, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, user1, &symbol, 10, dollars(99)).await.unwrap();
-    place_limit_buy(&state, user2, &symbol, 10, dollars(98)).await.unwrap();
+    place_limit_buy(&state, user1, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user1, &symbol, 10, dollars(99))
+        .await
+        .unwrap();
+    place_limit_buy(&state, user2, &symbol, 10, dollars(98))
+        .await
+        .unwrap();
 
     let total = state.orders.get_total_open_orders_count();
     assert_eq!(total, 3, "Should have 3 total open orders");
@@ -220,8 +322,13 @@ async fn test_orders_service_admin_view() {
     let symbol = create_test_company(&state, "ORDADM", "Order Admin Co").await;
 
     let user = create_test_user_with_portfolio(
-        &state, "ORDADMUSER", "Order Admin User", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "ORDADMUSER",
+        "Order Admin User",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     // Create user name map
     let mut user_names = HashMap::new();
@@ -229,9 +336,13 @@ async fn test_orders_service_admin_view() {
 
     open_market(&state);
 
-    place_limit_buy(&state, user, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_buy(&state, user, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
-    let admin_orders = state.orders.get_all_orders_admin(Some(&symbol), &user_names);
+    let admin_orders = state
+        .orders
+        .get_all_orders_admin(Some(&symbol), &user_names);
     assert_eq!(admin_orders.len(), 1);
     assert_eq!(admin_orders[0].user_name, "Order Admin User");
 }
@@ -247,17 +358,30 @@ async fn test_trade_history_record_trade() {
     let symbol = create_test_company(&state, "TRDREC", "Trade Record Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDRECSELL", "Trade Record Seller", dollars(10_000),
+        &state,
+        "TRDRECSELL",
+        "Trade Record Seller",
+        dollars(10_000),
         vec![("TRDREC".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDRECBUY", "Trade Record Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDRECBUY",
+        "Trade Record Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Verify trade recorded
     let count = state.trade_history.get_total_trade_count();
@@ -271,19 +395,32 @@ async fn test_trade_history_user_pagination() {
     let symbol = create_test_company(&state, "TRDPAGE", "Trade Page Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDPAGESELL", "Trade Page Seller", dollars(10_000),
+        &state,
+        "TRDPAGESELL",
+        "Trade Page Seller",
+        dollars(10_000),
         vec![("TRDPAGE".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDPAGEBUY", "Trade Page Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDPAGEBUY",
+        "Trade Page Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Execute multiple trades
     for _ in 0..5 {
-        place_limit_sell(&state, seller, &symbol, 2, dollars(100)).await.unwrap();
-        place_limit_buy(&state, buyer, &symbol, 2, dollars(100)).await.unwrap();
+        place_limit_sell(&state, seller, &symbol, 2, dollars(100))
+            .await
+            .unwrap();
+        place_limit_buy(&state, buyer, &symbol, 2, dollars(100))
+            .await
+            .unwrap();
     }
 
     // Test pagination - page 0, 3 per page
@@ -306,22 +443,39 @@ async fn test_trade_history_symbol_trades() {
     let symbol2 = create_test_company(&state, "TRDSYM2", "Trade Symbol 2").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDSYMSELL", "Trade Symbol Seller", dollars(10_000),
+        &state,
+        "TRDSYMSELL",
+        "Trade Symbol Seller",
+        dollars(10_000),
         vec![("TRDSYM1".to_string(), 100), ("TRDSYM2".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDSYMBUY", "Trade Symbol Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDSYMBUY",
+        "Trade Symbol Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Trade symbol1
-    place_limit_sell(&state, seller, &symbol1, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol1, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol1, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol1, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Trade symbol2
-    place_limit_sell(&state, seller, &symbol2, 5, dollars(200)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol2, 5, dollars(200)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol2, 5, dollars(200))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol2, 5, dollars(200))
+        .await
+        .unwrap();
 
     // Get symbol1 trades only
     let sym1_trades = state.trade_history.get_symbol_trades(&symbol1, 10);
@@ -335,24 +489,39 @@ async fn test_trade_history_filtered() {
     let symbol = create_test_company(&state, "TRDFILT", "Trade Filter Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDFILTSELL", "Trade Filter Seller", dollars(10_000),
+        &state,
+        "TRDFILTSELL",
+        "Trade Filter Seller",
+        dollars(10_000),
         vec![("TRDFILT".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDFILTBUY", "Trade Filter Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDFILTBUY",
+        "Trade Filter Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Filter by user
     let user_trades = state.trade_history.get_all_trades(Some(buyer), None, 0, 10);
     assert!(!user_trades.trades.is_empty());
 
     // Filter by symbol
-    let symbol_trades = state.trade_history.get_all_trades(None, Some(&symbol), 0, 10);
+    let symbol_trades = state
+        .trade_history
+        .get_all_trades(None, Some(&symbol), 0, 10);
     assert!(!symbol_trades.trades.is_empty());
 }
 
@@ -363,19 +532,32 @@ async fn test_trade_history_user_count() {
     let symbol = create_test_company(&state, "TRDCNT", "Trade Count Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDCNTSELL", "Trade Count Seller", dollars(10_000),
+        &state,
+        "TRDCNTSELL",
+        "Trade Count Seller",
+        dollars(10_000),
         vec![("TRDCNT".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDCNTBUY", "Trade Count Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDCNTBUY",
+        "Trade Count Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Execute 3 trades
     for _ in 0..3 {
-        place_limit_sell(&state, seller, &symbol, 5, dollars(100)).await.unwrap();
-        place_limit_buy(&state, buyer, &symbol, 5, dollars(100)).await.unwrap();
+        place_limit_sell(&state, seller, &symbol, 5, dollars(100))
+            .await
+            .unwrap();
+        place_limit_buy(&state, buyer, &symbol, 5, dollars(100))
+            .await
+            .unwrap();
     }
 
     let count = state.trade_history.get_user_trade_count(buyer);
@@ -389,17 +571,30 @@ async fn test_trade_history_clear() {
     let symbol = create_test_company(&state, "TRDCLR", "Trade Clear Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDCLRSELL", "Trade Clear Seller", dollars(10_000),
+        &state,
+        "TRDCLRSELL",
+        "Trade Clear Seller",
+        dollars(10_000),
         vec![("TRDCLR".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDCLRBUY", "Trade Clear Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDCLRBUY",
+        "Trade Clear Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Clear all
     state.trade_history.clear_all();
@@ -415,18 +610,31 @@ async fn test_trade_history_total_volume() {
     let symbol = create_test_company(&state, "TRDVOL", "Trade Volume Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDVOLSELL", "Trade Volume Seller", dollars(10_000),
+        &state,
+        "TRDVOLSELL",
+        "Trade Volume Seller",
+        dollars(10_000),
         vec![("TRDVOL".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDVOLBUY", "Trade Volume Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDVOLBUY",
+        "Trade Volume Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Trade: 10 shares at $100 = $1000 total
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     let volume = state.trade_history.get_total_volume();
     assert!(volume >= dollars(1_000), "Volume should be at least $1000");
@@ -439,21 +647,37 @@ async fn test_trade_history_recent_volume() {
     let symbol = create_test_company(&state, "TRDRECV", "Trade Recent Vol Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDRECVSELL", "Trade Recent Vol Seller", dollars(10_000),
+        &state,
+        "TRDRECVSELL",
+        "Trade Recent Vol Seller",
+        dollars(10_000),
         vec![("TRDRECV".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDRECVBUY", "Trade Recent Vol Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDRECVBUY",
+        "Trade Recent Vol Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Get volume in last 60 seconds
     let recent_volume = state.trade_history.get_recent_volume(60);
-    assert!(recent_volume >= dollars(1_000), "Recent volume should include our trade");
+    assert!(
+        recent_volume >= dollars(1_000),
+        "Recent volume should include our trade"
+    );
 }
 
 /// SVC-TRADE-009: Admin trade history view
@@ -463,17 +687,30 @@ async fn test_trade_history_admin_view() {
     let symbol = create_test_company(&state, "TRDADM", "Trade Admin Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "TRDADMSELL", "Trade Admin Seller", dollars(10_000),
+        &state,
+        "TRDADMSELL",
+        "Trade Admin Seller",
+        dollars(10_000),
         vec![("TRDADM".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "TRDADMBUY", "Trade Admin Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "TRDADMBUY",
+        "Trade Admin Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     let (trades, total, has_more) = state.trade_history.get_all_trades_admin(None, None, 0, 10);
     assert!(!trades.is_empty());
@@ -505,9 +742,18 @@ async fn test_admin_set_volatility() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "VOLAT", "Volatility Co").await;
 
-    state.admin.set_company_volatility(&symbol, 50).await.unwrap();
+    state
+        .admin
+        .set_company_volatility(&symbol, 50)
+        .await
+        .unwrap();
 
-    let company = state.company_repo.find_by_symbol(&symbol).await.unwrap().unwrap();
+    let company = state
+        .company_repo
+        .find_by_symbol(&symbol)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(company.volatility, 50);
 }
 
@@ -527,13 +773,31 @@ async fn test_admin_set_bankrupt() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "BANKR", "Bankrupt Co").await;
 
-    state.admin.set_company_bankrupt(&symbol, true).await.unwrap();
+    state
+        .admin
+        .set_company_bankrupt(&symbol, true)
+        .await
+        .unwrap();
 
-    let company = state.company_repo.find_by_symbol(&symbol).await.unwrap().unwrap();
+    let company = state
+        .company_repo
+        .find_by_symbol(&symbol)
+        .await
+        .unwrap()
+        .unwrap();
     assert!(company.bankrupt);
 
-    state.admin.set_company_bankrupt(&symbol, false).await.unwrap();
-    let company = state.company_repo.find_by_symbol(&symbol).await.unwrap().unwrap();
+    state
+        .admin
+        .set_company_bankrupt(&symbol, false)
+        .await
+        .unwrap();
+    let company = state
+        .company_repo
+        .find_by_symbol(&symbol)
+        .await
+        .unwrap()
+        .unwrap();
     assert!(!company.bankrupt);
 }
 
@@ -542,14 +806,23 @@ async fn test_admin_set_bankrupt() {
 async fn test_admin_create_company() {
     let state = create_test_state().await;
 
-    state.admin.create_company(
-        "NEWCO".to_string(),
-        "New Company Inc".to_string(),
-        "Technology".to_string(),
-        25,
-    ).await.unwrap();
+    state
+        .admin
+        .create_company(
+            "NEWCO".to_string(),
+            "New Company Inc".to_string(),
+            "Technology".to_string(),
+            25,
+        )
+        .await
+        .unwrap();
 
-    let company = state.company_repo.find_by_symbol("NEWCO").await.unwrap().unwrap();
+    let company = state
+        .company_repo
+        .find_by_symbol("NEWCO")
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(company.name, "New Company Inc");
     assert_eq!(company.sector, "Technology");
     assert_eq!(company.volatility, 25);
@@ -561,12 +834,15 @@ async fn test_admin_create_duplicate_company() {
     let state = create_test_state().await;
     let symbol = create_test_company(&state, "DUPSYM", "Duplicate Symbol Co").await;
 
-    let result = state.admin.create_company(
-        symbol,
-        "Another Company".to_string(),
-        "Finance".to_string(),
-        10,
-    ).await;
+    let result = state
+        .admin
+        .create_company(
+            symbol,
+            "Another Company".to_string(),
+            "Finance".to_string(),
+            10,
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(result.unwrap_err().contains("already exists"));
@@ -680,12 +956,8 @@ async fn test_leaderboard_get_current() {
     let state = create_test_state().await;
 
     // Create some users with different net worth
-    create_test_user_with_portfolio(
-        &state, "LEADER1", "Leader 1", dollars(100_000), vec![],
-    ).await;
-    create_test_user_with_portfolio(
-        &state, "LEADER2", "Leader 2", dollars(50_000), vec![],
-    ).await;
+    create_test_user_with_portfolio(&state, "LEADER1", "Leader 1", dollars(100_000), vec![]).await;
+    create_test_user_with_portfolio(&state, "LEADER2", "Leader 2", dollars(50_000), vec![]).await;
 
     let leaderboard = state.leaderboard.get_current();
     // May be empty if not updated yet
@@ -884,12 +1156,18 @@ async fn test_token_revocation() {
 
     // Create first token
     let (token1, revoked1) = state.tokens.create_token(user_id);
-    assert!(revoked1.is_empty(), "First token should not revoke anything");
+    assert!(
+        revoked1.is_empty(),
+        "First token should not revoke anything"
+    );
 
     // Create second token - should revoke first
     let (_token2, revoked2) = state.tokens.create_token(user_id);
     assert!(!revoked2.is_empty(), "Second token should revoke first");
-    assert!(revoked2.contains(&token1), "First token should be in revoked list");
+    assert!(
+        revoked2.contains(&token1),
+        "First token should be in revoked list"
+    );
 
     // First token should no longer be valid
     let validated = state.tokens.validate_token(&token1);
@@ -918,18 +1196,31 @@ async fn test_market_get_last_price() {
     let symbol = create_test_company(&state, "MKTPRICE", "Market Price Co").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "MKTPRICESELL", "Market Price Seller", dollars(10_000),
+        &state,
+        "MKTPRICESELL",
+        "Market Price Seller",
+        dollars(10_000),
         vec![("MKTPRICE".to_string(), 100)],
-    ).await;
+    )
+    .await;
     let buyer = create_test_user_with_portfolio(
-        &state, "MKTPRICEBUY", "Market Price Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "MKTPRICEBUY",
+        "Market Price Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Execute trade at $150
-    place_limit_sell(&state, seller, &symbol, 10, dollars(150)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(150)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(150))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(150))
+        .await
+        .unwrap();
 
     // Note: MarketService needs to process the trade for get_last_price to work
     // In tests without background task, we may need to manually process
@@ -978,13 +1269,20 @@ async fn test_engine_clear_orderbook() {
     let symbol = create_test_company(&state, "CLRBOOK", "Clear Book Co").await;
 
     let buyer = create_test_user_with_portfolio(
-        &state, "CLRBOOKBUY", "Clear Book Buyer", dollars(100_000), vec![],
-    ).await;
+        &state,
+        "CLRBOOKBUY",
+        "Clear Book Buyer",
+        dollars(100_000),
+        vec![],
+    )
+    .await;
 
     open_market(&state);
 
     // Add orders
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Clear
     state.engine.clear_orderbook(&symbol);

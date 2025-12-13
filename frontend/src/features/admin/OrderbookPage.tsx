@@ -25,12 +25,18 @@ export const OrderbookPage: React.FC = () => {
         fetchOrderbook
     } = useAdminStore();
 
-    const [selectedSymbol, setSelectedSymbol] = useState<string>('');
+    // Initialize selectedSymbol lazily based on companies
+    const [selectedSymbol, setSelectedSymbol] = useState<string>(() =>
+        companies.length > 0 ? companies[0].symbol : ''
+    );
 
-    // Set default symbol on mount
+    // Track if we need to initialize when companies load
+    const initializedRef = React.useRef(false);
     useEffect(() => {
-        if (companies.length > 0 && !selectedSymbol) {
-            setSelectedSymbol(companies[0].symbol);
+        if (!initializedRef.current && companies.length > 0 && !selectedSymbol) {
+            // Use queueMicrotask to avoid synchronous setState in effect body
+            queueMicrotask(() => setSelectedSymbol(companies[0].symbol));
+            initializedRef.current = true;
         }
     }, [companies, selectedSymbol]);
 

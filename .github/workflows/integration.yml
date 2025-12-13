@@ -1,0 +1,108 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, real-bid, real-bid-rust]
+  pull_request:
+    branches: [main, real-bid, real-bid-rust]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  integration:
+    name: Full Stack Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Rust
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      # Setup Node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # Build Backend
+      - name: Build backend
+        run: cargo build --release
+        working-directory: backend
+
+      # Install Frontend Dependencies
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      # Build Frontend
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      # Install Playwright
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      # Start Backend Server
+      - name: Start backend server
+        run: |
+          ./target/release/stockmart &
+          echo $! > /tmp/backend.pid
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 1
+          done
+        working-directory: backend
+
+      # Run E2E Tests
+      - name: Run E2E integration tests
+        run: npm run test:e2e
+        working-directory: frontend
+        env:
+          VITE_WS_URL: ws://localhost:8080/ws
+
+      # Cleanup
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f /tmp/backend.pid ]; then
+            kill $(cat /tmp/backend.pid) || true
+          fi
+
+      # Upload test artifacts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  api-tests:
+    name: API Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Run integration tests
+        run: cargo test --test '*' -- --test-threads=1
+        working-directory: backend
+        env:
+          RUST_LOG: info

@@ -18,12 +18,15 @@ async fn test_trade_broadcast_to_subscribers() {
     let symbol = create_test_company(&state, "AAPL", "Apple").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     // Subscribe to trade channel
     let mut trade_rx = state.engine.subscribe_trades();
@@ -31,14 +34,16 @@ async fn test_trade_broadcast_to_subscribers() {
     open_market(&state);
 
     // Place matching orders to trigger trade
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Should receive trade broadcast
-    let trade = tokio::time::timeout(
-        tokio::time::Duration::from_millis(100),
-        trade_rx.recv()
-    ).await;
+    let trade =
+        tokio::time::timeout(tokio::time::Duration::from_millis(100), trade_rx.recv()).await;
 
     assert!(trade.is_ok(), "Should receive trade broadcast");
     let trade = trade.unwrap().unwrap();
@@ -54,12 +59,15 @@ async fn test_trade_broadcast_multiple_subscribers() {
     let symbol = create_test_company(&state, "AAPL", "Apple").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     // Multiple subscribers
     let mut rx1 = state.engine.subscribe_trades();
@@ -69,8 +77,12 @@ async fn test_trade_broadcast_multiple_subscribers() {
     open_market(&state);
 
     // Execute trade
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
     // All should receive the trade
     let timeout = tokio::time::Duration::from_millis(100);
@@ -91,12 +103,15 @@ async fn test_trade_broadcast_dropped_receiver() {
     let symbol = create_test_company(&state, "AAPL", "Apple").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     // Create and immediately drop a receiver
     {
@@ -110,16 +125,19 @@ async fn test_trade_broadcast_dropped_receiver() {
     open_market(&state);
 
     // Trade should still work
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
     let result = place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await;
 
-    assert!(result.is_ok(), "Trade should succeed even with dropped receiver");
+    assert!(
+        result.is_ok(),
+        "Trade should succeed even with dropped receiver"
+    );
 
     // Active receiver should still get the message
-    let trade = tokio::time::timeout(
-        tokio::time::Duration::from_millis(100),
-        active_rx.recv()
-    ).await;
+    let trade =
+        tokio::time::timeout(tokio::time::Duration::from_millis(100), active_rx.recv()).await;
     assert!(trade.is_ok());
 }
 
@@ -219,7 +237,10 @@ async fn test_chat_history_limit() {
 
     // History should be limited to 50
     let history = state.chat.get_history();
-    assert!(history.len() <= 50, "Chat history should be limited to 50 messages");
+    assert!(
+        history.len() <= 50,
+        "Chat history should be limited to 50 messages"
+    );
 }
 
 // =============================================================================
@@ -234,25 +255,39 @@ async fn test_trade_history_stores_trades() {
     let symbol = create_test_company(&state, "AAPL", "Apple").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Execute trades
-    place_limit_sell(&state, seller, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
 
-    place_limit_sell(&state, seller, &symbol, 20, dollars(101)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 20, dollars(101)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 20, dollars(101))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 20, dollars(101))
+        .await
+        .unwrap();
 
     // Check trade history
     let history = state.trade_history.get_recent_symbol_trades(&symbol, 10);
-    assert!(history.len() >= 2, "Should have at least 2 trades in history");
+    assert!(
+        history.len() >= 2,
+        "Should have at least 2 trades in history"
+    );
 }
 
 /// Test: Trade history per symbol
@@ -264,22 +299,33 @@ async fn test_trade_history_per_symbol() {
     let symbol2 = create_test_company(&state, "GOOGL", "Google").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100), ("GOOGL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Trade AAPL
-    place_limit_sell(&state, seller, &symbol1, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol1, 10, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol1, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol1, 10, dollars(100))
+        .await
+        .unwrap();
 
     // Trade GOOGL
-    place_limit_sell(&state, seller, &symbol2, 5, dollars(200)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol2, 5, dollars(200)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol2, 5, dollars(200))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol2, 5, dollars(200))
+        .await
+        .unwrap();
 
     // Each symbol should have its own history
     let aapl_history = state.trade_history.get_recent_symbol_trades(&symbol1, 10);
@@ -302,14 +348,16 @@ async fn test_leaderboard_calculates_networth() {
 
     // Create users with different net worths
     let _user1 = create_test_user_with_portfolio(
-        &state, "RICH", "Rich User", dollars(100_000),
+        &state,
+        "RICH",
+        "Rich User",
+        dollars(100_000),
         vec![("AAPL".to_string(), 100)], // +$10,000 at $100
-    ).await;
+    )
+    .await;
 
-    let _user2 = create_test_user_with_portfolio(
-        &state, "POOR", "Poor User", dollars(10_000),
-        vec![],
-    ).await;
+    let _user2 =
+        create_test_user_with_portfolio(&state, "POOR", "Poor User", dollars(10_000), vec![]).await;
 
     // Get leaderboard - would need to check the leaderboard service
     // This tests the basic setup
@@ -328,26 +376,36 @@ async fn test_orderbook_depth() {
 
     let symbol = create_test_company(&state, "AAPL", "Apple").await;
 
-    let buyer1 = create_test_user_with_portfolio(
-        &state, "B1", "Buyer 1", dollars(100_000), vec![],
-    ).await;
-    let buyer2 = create_test_user_with_portfolio(
-        &state, "B2", "Buyer 2", dollars(100_000), vec![],
-    ).await;
+    let buyer1 =
+        create_test_user_with_portfolio(&state, "B1", "Buyer 1", dollars(100_000), vec![]).await;
+    let buyer2 =
+        create_test_user_with_portfolio(&state, "B2", "Buyer 2", dollars(100_000), vec![]).await;
     let seller = create_test_user_with_portfolio(
-        &state, "S1", "Seller 1", dollars(10_000),
+        &state,
+        "S1",
+        "Seller 1",
+        dollars(10_000),
         vec![("AAPL".to_string(), 200)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Create bid levels
-    place_limit_buy(&state, buyer1, &symbol, 10, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer2, &symbol, 20, dollars(99)).await.unwrap();
+    place_limit_buy(&state, buyer1, &symbol, 10, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer2, &symbol, 20, dollars(99))
+        .await
+        .unwrap();
 
     // Create ask levels
-    place_limit_sell(&state, seller, &symbol, 15, dollars(101)).await.unwrap();
-    place_limit_sell(&state, seller, &symbol, 25, dollars(102)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 15, dollars(101))
+        .await
+        .unwrap();
+    place_limit_sell(&state, seller, &symbol, 25, dollars(102))
+        .await
+        .unwrap();
 
     // Get depth - returns (bids, asks) tuple
     let depth = state.engine.get_order_book_depth(&symbol, 5);

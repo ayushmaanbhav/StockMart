@@ -73,7 +73,12 @@ pub trait CompanyRepository: Send + Sync {
     /// Get all tradable (non-bankrupt) companies.
     #[allow(dead_code)] // API method for filtering
     async fn all_tradable(&self) -> RepositoryResult<Vec<Company>> {
-        Ok(self.all().await?.into_iter().filter(|c| c.is_tradable()).collect())
+        Ok(self
+            .all()
+            .await?
+            .into_iter()
+            .filter(|c| c.is_tradable())
+            .collect())
     }
 
     /// Count total companies.

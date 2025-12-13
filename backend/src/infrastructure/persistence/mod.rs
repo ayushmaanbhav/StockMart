@@ -6,4 +6,4 @@
 
 mod memory;
 
-pub use memory::{InMemoryUserRepository, InMemoryCompanyRepository};
+pub use memory::{InMemoryCompanyRepository, InMemoryUserRepository};

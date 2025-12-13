@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
-use serde::{Serialize, Deserialize};
 use crate::domain::models::UserId;
 use crate::domain::ui_models::LeaderboardEntryUI;
 use crate::domain::UserRepository;
 use crate::service::market::MarketService;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use tokio::sync::broadcast;
+use tokio::time::{sleep, Duration};
 
 /// Legacy entry for backward compatibility during migration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,7 +74,8 @@ impl LeaderboardService {
 
                 // CORRECT NET WORTH CALCULATION:
                 // money (available) + locked_money (in buy orders) + margin_locked (for shorts) + portfolio_value
-                let net_worth = user.money + user.locked_money + user.margin_locked + portfolio_value;
+                let net_worth =
+                    user.money + user.locked_money + user.margin_locked + portfolio_value;
 
                 entries.push(LeaderboardEntryUI {
                     rank: 0, // Will assign later
@@ -139,7 +140,7 @@ impl LeaderboardService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::models::{User, Portfolio};
+    use crate::domain::models::{Portfolio, User};
     use crate::infrastructure::persistence::InMemoryUserRepository;
 
     async fn create_test_service() -> LeaderboardService {
@@ -153,15 +154,27 @@ mod tests {
         let market = Arc::new(MarketService::new());
 
         // Create users with different net worths
-        let mut user1 = User::new("REG001".to_string(), "Rich User".to_string(), "pass".to_string());
+        let mut user1 = User::new(
+            "REG001".to_string(),
+            "Rich User".to_string(),
+            "pass".to_string(),
+        );
         user1.id = 1;
         user1.money = 500_000_000_000; // $50M
 
-        let mut user2 = User::new("REG002".to_string(), "Medium User".to_string(), "pass".to_string());
+        let mut user2 = User::new(
+            "REG002".to_string(),
+            "Medium User".to_string(),
+            "pass".to_string(),
+        );
         user2.id = 2;
         user2.money = 100_000_000_000; // $10M
 
-        let mut user3 = User::new("REG003".to_string(), "Poor User".to_string(), "pass".to_string());
+        let mut user3 = User::new(
+            "REG003".to_string(),
+            "Poor User".to_string(),
+            "pass".to_string(),
+        );
         user3.id = 3;
         user3.money = 10_000_000_000; // $1M
 
@@ -208,11 +221,19 @@ mod tests {
         let market = Arc::new(MarketService::new());
 
         // Create users
-        let mut user1 = User::new("REG001".to_string(), "User A".to_string(), "pass".to_string());
+        let mut user1 = User::new(
+            "REG001".to_string(),
+            "User A".to_string(),
+            "pass".to_string(),
+        );
         user1.id = 1;
         user1.money = 200_000_000_000;
 
-        let mut user2 = User::new("REG002".to_string(), "User B".to_string(), "pass".to_string());
+        let mut user2 = User::new(
+            "REG002".to_string(),
+            "User B".to_string(),
+            "pass".to_string(),
+        );
         user2.id = 2;
         user2.money = 100_000_000_000;
 
@@ -296,19 +317,21 @@ mod tests {
         });
 
         // Create user with portfolio
-        let mut user = User::new("REG001".to_string(), "Stock Holder".to_string(), "pass".to_string());
+        let mut user = User::new(
+            "REG001".to_string(),
+            "Stock Holder".to_string(),
+            "pass".to_string(),
+        );
         user.id = 1;
         user.money = 10_000_000_000; // $1M cash
-        user.portfolio = vec![
-            Portfolio {
-                user_id: 1,
-                symbol: "AAPL".to_string(),
-                qty: 1000,         // 1000 shares at $150 = $150,000
-                short_qty: 0,
-                locked_qty: 0,
-                average_buy_price: 1000000,
-            }
-        ];
+        user.portfolio = vec![Portfolio {
+            user_id: 1,
+            symbol: "AAPL".to_string(),
+            qty: 1000, // 1000 shares at $150 = $150,000
+            short_qty: 0,
+            locked_qty: 0,
+            average_buy_price: 1000000,
+        }];
 
         repo.save(user).await.unwrap();
 

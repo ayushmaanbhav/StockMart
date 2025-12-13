@@ -2,8 +2,8 @@
 //!
 //! A Trade represents a completed transaction between two parties.
 
-use serde::{Deserialize, Serialize};
 use crate::domain::common::{OrderId, Price, Quantity, TradeId, UserId};
+use serde::{Deserialize, Serialize};
 
 /// A completed trade between two parties.
 ///
@@ -30,4 +30,3 @@ pub struct Trade {
     /// Unix timestamp of trade execution
     pub timestamp: i64,
 }
-

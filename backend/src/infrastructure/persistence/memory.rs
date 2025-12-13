@@ -95,7 +95,11 @@ impl UserRepository for InMemoryUserRepository {
     }
 
     async fn all(&self) -> RepositoryResult<Vec<User>> {
-        Ok(self.users.iter().map(|entry| entry.value().clone()).collect())
+        Ok(self
+            .users
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect())
     }
 
     async fn count(&self) -> RepositoryResult<usize> {

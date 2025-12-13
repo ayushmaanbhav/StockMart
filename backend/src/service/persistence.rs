@@ -1,8 +1,8 @@
+use crate::domain::models::{Company, User};
+use crate::domain::{CompanyRepository, UserRepository};
+use serde_json;
 use std::fs;
 use std::sync::Arc;
-use serde_json;
-use crate::domain::{UserRepository, CompanyRepository};
-use crate::domain::models::{User, Company};
 use tokio::time::{sleep, Duration};
 
 pub struct PersistenceService {
@@ -65,15 +65,21 @@ impl PersistenceService {
         // Save Users
         if let Ok(users) = self.user_repo.all().await {
             let users_path = format!("{}/users.json", self.data_dir);
-            let _ = fs::write(users_path, serde_json::to_string_pretty(&users).unwrap_or_default());
+            let _ = fs::write(
+                users_path,
+                serde_json::to_string_pretty(&users).unwrap_or_default(),
+            );
         }
 
         // Save Companies
         if let Ok(companies) = self.company_repo.all().await {
             let companies_path = format!("{}/companies.json", self.data_dir);
-            let _ = fs::write(companies_path, serde_json::to_string_pretty(&companies).unwrap_or_default());
+            let _ = fs::write(
+                companies_path,
+                serde_json::to_string_pretty(&companies).unwrap_or_default(),
+            );
         }
-        
+
         tracing::info!("Saved data to disk");
     }
 }

@@ -5,8 +5,10 @@
 export { Button } from './Button';
 export { Input } from './Input';
 export { Card, CardHeader, CardBody } from './Card';
-export { Modal, useModal } from './Modal';
-export { ToastContainer, useToast } from './Toast';
+export { Modal } from './Modal';
+export { useModal } from './useModal';
+export { ToastContainer } from './Toast';
+export { useToast } from './useToast';
 export { Badge } from './Badge';
 export { Tabs } from './Tabs';
 export { ErrorBoundary, WidgetErrorBoundary } from './ErrorBoundary';

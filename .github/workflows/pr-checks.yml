@@ -1,0 +1,116 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, real-bid, real-bid-rust]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr-title:
+    name: PR Title Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title follows conventional commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            should start with a lowercase letter.
+
+  pr-size:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check PR size
+        run: |
+          # Get the number of changed lines
+          ADDED=$(git diff --numstat origin/${{ github.base_ref }}..HEAD | awk '{sum += $1} END {print sum}')
+          REMOVED=$(git diff --numstat origin/${{ github.base_ref }}..HEAD | awk '{sum += $2} END {print sum}')
+          TOTAL=$((ADDED + REMOVED))
+
+          echo "## PR Size Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines added: $ADDED" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines removed: $REMOVED" >> $GITHUB_STEP_SUMMARY
+          echo "- Total changes: $TOTAL" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$TOTAL" -gt 1000 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Warning:** This PR has more than 1000 lines of changes. Consider breaking it into smaller PRs." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  branch-naming:
+    name: Branch Naming Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          VALID_PATTERN="^(feature|fix|hotfix|release|docs|refactor|test|chore)/[a-z0-9-]+$"
+
+          if [[ "$BRANCH_NAME" =~ $VALID_PATTERN ]] || [[ "$BRANCH_NAME" == "main" ]] || [[ "$BRANCH_NAME" == "real-bid"* ]]; then
+            echo "Branch name '$BRANCH_NAME' is valid"
+          else
+            echo "::warning::Branch name '$BRANCH_NAME' doesn't follow the naming convention (feature/*, fix/*, docs/*, etc.)"
+          fi
+
+  files-changed:
+    name: Files Changed Summary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+      - name: Generate summary
+        run: |
+          echo "## Changed Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          BACKEND_COUNT=0
+          FRONTEND_COUNT=0
+          WORKFLOW_COUNT=0
+          OTHER_COUNT=0
+
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ $file == backend/* ]]; then
+              ((BACKEND_COUNT++))
+            elif [[ $file == frontend/* ]]; then
+              ((FRONTEND_COUNT++))
+            elif [[ $file == .github/* ]]; then
+              ((WORKFLOW_COUNT++))
+            else
+              ((OTHER_COUNT++))
+            fi
+          done
+
+          echo "| Category | Files Changed |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | $BACKEND_COUNT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | $FRONTEND_COUNT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflows | $WORKFLOW_COUNT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Other | $OTHER_COUNT |" >> $GITHUB_STEP_SUMMARY

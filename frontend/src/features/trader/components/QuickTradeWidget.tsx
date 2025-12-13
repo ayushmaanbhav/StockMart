@@ -169,29 +169,34 @@ export const QuickTradeWidget: React.FC<QuickTradeWidgetProps> = ({
 
     useEffect(() => {
         if (!price && lastPrice) {
-            setPrice(lastPrice.toFixed(2));
+            // Use queueMicrotask to avoid synchronous setState in effect body
+            queueMicrotask(() => setPrice(lastPrice.toFixed(2)));
         }
     }, [lastPrice, price]);
 
     // Update price when switching between market and limit
     useEffect(() => {
         if (orderType === 'Limit' && marketPrice) {
-            setPrice(marketPrice.toFixed(2));
+            // Use queueMicrotask to avoid synchronous setState in effect body
+            queueMicrotask(() => setPrice(marketPrice.toFixed(2)));
         }
     }, [orderType, marketPrice]);
 
     // Handle external updates (from order book click or portfolio quick sell)
     useEffect(() => {
-        if (externalPrice !== undefined) {
-            setPrice(externalPrice.toFixed(2));
-            setOrderType('Limit');
-        }
-        if (externalSide !== undefined) {
-            setSide(externalSide);
-        }
-        if (externalQty !== undefined) {
-            setQty(externalQty.toString());
-        }
+        // Use queueMicrotask to avoid synchronous setState in effect body
+        queueMicrotask(() => {
+            if (externalPrice !== undefined) {
+                setPrice(externalPrice.toFixed(2));
+                setOrderType('Limit');
+            }
+            if (externalSide !== undefined) {
+                setSide(externalSide);
+            }
+            if (externalQty !== undefined) {
+                setQty(externalQty.toString());
+            }
+        });
         if (onExternalUpdate) {
             onExternalUpdate();
         }

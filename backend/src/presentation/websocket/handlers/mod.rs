@@ -14,7 +14,9 @@ pub mod trading;
 pub use admin::handle_admin_action;
 pub use auth::{handle_auth, handle_login, handle_register};
 pub use chat::handle_chat;
-pub use market::{handle_get_depth, handle_get_stock_trades, handle_get_trade_history, handle_subscribe};
+pub use market::{
+    handle_get_depth, handle_get_stock_trades, handle_get_trade_history, handle_subscribe,
+};
 pub use sync::handle_request_sync;
 pub use trading::{handle_cancel_order, handle_get_portfolio, handle_place_order};
 

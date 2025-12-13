@@ -4,7 +4,7 @@
 //! initialized from persisted state and avoid the global mutable state
 //! anti-pattern of static AtomicU64 counters.
 
-#![allow(dead_code)]  // Generator trait methods and initialization helpers
+#![allow(dead_code)] // Generator trait methods and initialization helpers
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;

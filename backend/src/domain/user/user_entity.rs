@@ -2,12 +2,12 @@
 //!
 //! A User represents a trader in the system.
 
-use serde::{Deserialize, Serialize};
+use super::portfolio::Portfolio;
+use super::role::Role;
 use crate::domain::common::{Price, UserId};
 use crate::domain::constants::user::DEFAULT_STARTING_MONEY;
 use crate::infrastructure::id_generator::IdGenerators;
-use super::role::Role;
-use super::portfolio::Portfolio;
+use serde::{Deserialize, Serialize};
 
 /// A user/trader in the system.
 ///

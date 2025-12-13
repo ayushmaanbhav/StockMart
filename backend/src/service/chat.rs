@@ -1,6 +1,6 @@
-use tokio::sync::broadcast;
-use std::sync::{Arc, Mutex};
 use crate::domain::models::ChatMessage;
+use std::sync::{Arc, Mutex};
+use tokio::sync::broadcast;
 
 pub struct ChatService {
     tx: broadcast::Sender<ChatMessage>,
@@ -29,7 +29,7 @@ impl ChatService {
                 history.remove(0);
             }
         }
-        
+
         // Broadcast
         let _ = self.tx.send(message);
     }
@@ -42,6 +42,14 @@ impl ChatService {
     /// Get recent chat messages for state sync
     pub fn get_recent(&self, count: usize) -> Vec<ChatMessage> {
         let history = self.history.lock().unwrap();
-        history.iter().rev().take(count).cloned().collect::<Vec<_>>().into_iter().rev().collect()
+        history
+            .iter()
+            .rev()
+            .take(count)
+            .cloned()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect()
     }
 }

@@ -4,7 +4,4 @@
 
 pub mod types;
 
-pub use types::{
-    UserId, CompanyId, OrderId, TradeId,
-    Price, Quantity,
-};
+pub use types::{CompanyId, OrderId, Price, Quantity, TradeId, UserId};

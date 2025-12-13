@@ -2,9 +2,9 @@
 //!
 //! An Order represents a user's intent to buy or sell a security.
 
-use serde::{Deserialize, Serialize};
-use crate::domain::common::{OrderId, Price, Quantity, UserId};
 use super::order::{OrderSide, OrderStatus, OrderType, TimeInForce};
+use crate::domain::common::{OrderId, Price, Quantity, UserId};
+use serde::{Deserialize, Serialize};
 
 /// A trading order placed by a user.
 ///

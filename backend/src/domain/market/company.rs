@@ -2,8 +2,8 @@
 //!
 //! A Company represents a tradable security/stock.
 
-use serde::{Deserialize, Serialize};
 use crate::domain::common::{CompanyId, Quantity};
+use serde::{Deserialize, Serialize};
 
 /// A tradable company/security.
 ///

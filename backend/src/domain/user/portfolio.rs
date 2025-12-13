@@ -2,8 +2,8 @@
 //!
 //! A Portfolio represents a user's position in a specific security.
 
-use serde::{Deserialize, Serialize};
 use crate::domain::common::{Price, Quantity, UserId};
+use serde::{Deserialize, Serialize};
 
 /// A user's position in a specific security.
 ///
@@ -24,4 +24,3 @@ pub struct Portfolio {
     /// Average price paid per share
     pub average_buy_price: Price,
 }
-

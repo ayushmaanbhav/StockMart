@@ -22,9 +22,8 @@ use crate::presentation::websocket::{
     connection::{
         self, cleanup_connection, handle_candle_broadcast, handle_chat_broadcast,
         handle_circuit_breaker_broadcast, handle_index_broadcast, handle_leaderboard_broadcast,
-        handle_news_broadcast, handle_trade_broadcast, log_connection_closed,
-        log_connection_error, log_connection_established, send_initial_config,
-        BroadcastSubscriptions, ConnectionState,
+        handle_news_broadcast, handle_trade_broadcast, log_connection_closed, log_connection_error,
+        log_connection_established, send_initial_config, BroadcastSubscriptions, ConnectionState,
     },
     handlers::{
         handle_admin_action, handle_auth, handle_cancel_order, handle_chat, handle_get_depth,

@@ -22,8 +22,8 @@ use crate::config::ConfigService;
 use crate::domain::models::{Company, User};
 use crate::domain::{CompanyRepository, UserRepository};
 use crate::infrastructure::id_generator::IdGenerators;
-use crate::infrastructure::shutdown::{wait_for_shutdown_signal, ShutdownSignal};
 use crate::infrastructure::persistence::{InMemoryCompanyRepository, InMemoryUserRepository};
+use crate::infrastructure::shutdown::{wait_for_shutdown_signal, ShutdownSignal};
 use crate::service::admin::AdminService;
 use crate::service::chat::ChatService;
 use crate::service::engine::MatchingEngine;
@@ -56,8 +56,7 @@ async fn main() {
         .parse()
         .expect("PORT must be a valid u16");
 
-    let data_dir = std::env::var("DATA_DIR")
-        .unwrap_or_else(|_| "./data".to_string());
+    let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "./data".to_string());
 
     info!("Configuration: PORT={}, DATA_DIR={}", port, data_dir);
 
@@ -80,7 +79,10 @@ async fn main() {
 
     // Run server with graceful shutdown
     axum::serve(listener, app)
-        .with_graceful_shutdown(graceful_shutdown(shutdown_signal.clone(), persistence_service))
+        .with_graceful_shutdown(graceful_shutdown(
+            shutdown_signal.clone(),
+            persistence_service,
+        ))
         .await
         .expect("Server error");
 
@@ -153,10 +155,14 @@ async fn initialize_services(
     info!("Data loaded from persistence");
 
     // Initialize ID generators from loaded data to avoid ID conflicts
-    let max_user_id = user_repo.all().await
+    let max_user_id = user_repo
+        .all()
+        .await
         .map(|users| users.iter().map(|u| u.id).max().unwrap_or(0))
         .unwrap_or(0);
-    let max_company_id = company_repo.all().await
+    let max_company_id = company_repo
+        .all()
+        .await
         .map(|companies| companies.iter().map(|c| c.id).max().unwrap_or(0))
         .unwrap_or(0);
     IdGenerators::init_from_persisted(max_user_id, max_company_id);
@@ -188,7 +194,10 @@ async fn initialize_services(
             for company in companies {
                 engine.create_orderbook(company.symbol.clone());
             }
-            info!("Restored orderbooks for {} companies", company_repo.all().await.map(|c| c.len()).unwrap_or(0));
+            info!(
+                "Restored orderbooks for {} companies",
+                company_repo.all().await.map(|c| c.len()).unwrap_or(0)
+            );
         }
     }
 

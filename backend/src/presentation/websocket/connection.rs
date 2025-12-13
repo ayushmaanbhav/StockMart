@@ -6,7 +6,7 @@
 //! - Message sending utilities
 //! - Connection cleanup
 
-#![allow(dead_code)]  // Connection state helpers for subscription management
+#![allow(dead_code)] // Connection state helpers for subscription management
 
 use axum::extract::ws::{Message, WebSocket};
 use futures::{sink::SinkExt, stream::SplitSink};
@@ -103,10 +103,7 @@ impl BroadcastSubscriptions {
 }
 
 /// Send a message to the WebSocket client
-pub async fn send_message(
-    sender: &mut SplitSink<WebSocket, Message>,
-    msg: &ServerMessage,
-) {
+pub async fn send_message(sender: &mut SplitSink<WebSocket, Message>, msg: &ServerMessage) {
     match serde_json::to_string(msg) {
         Ok(json) => {
             if let Err(e) = sender.send(Message::Text(json)).await {
@@ -167,10 +164,11 @@ pub async fn handle_trade_broadcast(
     if let Some(uid) = conn_state.user_id {
         if trade.maker_user_id == uid || trade.taker_user_id == uid {
             if let Ok(Some(user)) = state.user_repo.find_by_id(uid).await {
-                let net_worth = crate::presentation::websocket::handlers::helpers::calculate_net_worth(
-                    &user,
-                    &state.market,
-                );
+                let net_worth =
+                    crate::presentation::websocket::handlers::helpers::calculate_net_worth(
+                        &user,
+                        &state.market,
+                    );
                 let portfolio_msg = ServerMessage::PortfolioUpdate {
                     money: user.money,
                     locked: user.locked_money,
@@ -185,10 +183,7 @@ pub async fn handle_trade_broadcast(
 }
 
 /// Handle a candle broadcast
-pub async fn handle_candle_broadcast(
-    sender: &mut SplitSink<WebSocket, Message>,
-    candle: Candle,
-) {
+pub async fn handle_candle_broadcast(sender: &mut SplitSink<WebSocket, Message>, candle: Candle) {
     let msg = ServerMessage::CandleUpdate {
         symbol: candle.symbol.clone(),
         candle,
@@ -228,10 +223,7 @@ pub async fn handle_index_broadcast(
 }
 
 /// Handle a news broadcast
-pub async fn handle_news_broadcast(
-    sender: &mut SplitSink<WebSocket, Message>,
-    news: NewsItem,
-) {
+pub async fn handle_news_broadcast(sender: &mut SplitSink<WebSocket, Message>, news: NewsItem) {
     let msg = ServerMessage::NewsUpdate { news };
     send_message(sender, &msg).await;
 }

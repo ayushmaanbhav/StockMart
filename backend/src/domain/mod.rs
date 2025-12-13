@@ -20,4 +20,4 @@ pub mod repositories;
 pub mod ui_models;
 
 // Re-export repository traits (used throughout the codebase)
-pub use repositories::{UserRepository, CompanyRepository};
+pub use repositories::{CompanyRepository, UserRepository};

@@ -1,13 +1,16 @@
-use crate::domain::models::{Order, OrderStatus, Trade, User, Portfolio, Price, Quantity, OrderSide, OrderType, TimeInForce, PRICE_SCALE};
-use crate::domain::trading::OrderBook;
-use crate::domain::UserRepository;
 use crate::domain::constants::trading::{SHORT_MARGIN_PERCENT, TRADE_CHANNEL_SIZE};
 use crate::domain::error::TradingError;
+use crate::domain::models::{
+    Order, OrderSide, OrderStatus, OrderType, Portfolio, Price, Quantity, TimeInForce, Trade, User,
+    PRICE_SCALE,
+};
+use crate::domain::trading::OrderBook;
+use crate::domain::UserRepository;
 use crate::service::orders::OrdersService;
 use crate::service::trade_history::TradeHistoryService;
 use dashmap::DashMap;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tokio::sync::broadcast;
 
 /// Error types for matching engine operations
@@ -16,9 +19,18 @@ pub enum EngineError {
     MarketClosed,
     UserNotFound,
     SymbolNotFound,
-    InsufficientFunds { required: Price, available: Price },
-    InsufficientShares { required: Quantity, available: Quantity },
-    InsufficientMargin { required: Price, available: Price },
+    InsufficientFunds {
+        required: Price,
+        available: Price,
+    },
+    InsufficientShares {
+        required: Quantity,
+        available: Quantity,
+    },
+    InsufficientMargin {
+        required: Price,
+        available: Price,
+    },
     OrderNotFound,
     InternalError(String),
 }
@@ -29,14 +41,35 @@ impl std::fmt::Display for EngineError {
             EngineError::MarketClosed => write!(f, "Market is currently closed"),
             EngineError::UserNotFound => write!(f, "User not found"),
             EngineError::SymbolNotFound => write!(f, "Trading symbol not found"),
-            EngineError::InsufficientFunds { required, available } => {
-                write!(f, "Insufficient funds: need {}, have {}", required, available)
+            EngineError::InsufficientFunds {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Insufficient funds: need {}, have {}",
+                    required, available
+                )
             }
-            EngineError::InsufficientShares { required, available } => {
-                write!(f, "Insufficient shares: need {}, have {}", required, available)
+            EngineError::InsufficientShares {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Insufficient shares: need {}, have {}",
+                    required, available
+                )
             }
-            EngineError::InsufficientMargin { required, available } => {
-                write!(f, "Insufficient margin for short: need {}, have {}", required, available)
+            EngineError::InsufficientMargin {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Insufficient margin for short: need {}, have {}",
+                    required, available
+                )
             }
             EngineError::OrderNotFound => write!(f, "Order not found"),
             EngineError::InternalError(msg) => write!(f, "Internal error: {}", msg),
@@ -69,24 +102,27 @@ impl EngineError {
             EngineError::SymbolNotFound => TradingError::SymbolNotFound {
                 symbol: "unknown".to_string(),
             },
-            EngineError::InsufficientFunds { required, available } => {
-                TradingError::InsufficientFunds {
-                    required: *required,
-                    available: *available,
-                }
-            }
-            EngineError::InsufficientShares { required, available } => {
-                TradingError::InsufficientShares {
-                    required: *required,
-                    available: *available,
-                }
-            }
-            EngineError::InsufficientMargin { required, available } => {
-                TradingError::InsufficientMargin {
-                    required: *required,
-                    available: *available,
-                }
-            }
+            EngineError::InsufficientFunds {
+                required,
+                available,
+            } => TradingError::InsufficientFunds {
+                required: *required,
+                available: *available,
+            },
+            EngineError::InsufficientShares {
+                required,
+                available,
+            } => TradingError::InsufficientShares {
+                required: *required,
+                available: *available,
+            },
+            EngineError::InsufficientMargin {
+                required,
+                available,
+            } => TradingError::InsufficientMargin {
+                required: *required,
+                available: *available,
+            },
             EngineError::OrderNotFound => TradingError::OrderNotFound { order_id: 0 },
             EngineError::InternalError(msg) => TradingError::InvalidOrder {
                 reason: msg.clone(),
@@ -134,7 +170,8 @@ impl MatchingEngine {
     }
 
     pub fn create_orderbook(&self, symbol: String) {
-        self.orderbooks.insert(symbol.clone(), OrderBook::new(symbol));
+        self.orderbooks
+            .insert(symbol.clone(), OrderBook::new(symbol));
     }
 
     /// Clear all orders from an orderbook (for game reset)
@@ -149,10 +186,18 @@ impl MatchingEngine {
     pub fn seed_order(&self, order: Order) {
         let symbol = order.symbol.clone();
         if let Some(mut ob) = self.orderbooks.get_mut(&symbol) {
-            tracing::info!("Seeding order {} for {} at price {}", order.id, symbol, order.price);
+            tracing::info!(
+                "Seeding order {} for {} at price {}",
+                order.id,
+                symbol,
+                order.price
+            );
             ob.seed_order(order);
         } else {
-            tracing::warn!("Cannot seed order - orderbook not found for symbol: {}", symbol);
+            tracing::warn!(
+                "Cannot seed order - orderbook not found for symbol: {}",
+                symbol
+            );
         }
     }
 
@@ -170,18 +215,30 @@ impl MatchingEngine {
     }
 
     /// Get order book depth for a symbol
-    pub fn get_order_book_depth(&self, symbol: &str, levels: usize) -> Option<(Vec<(Price, Quantity)>, Vec<(Price, Quantity)>)> {
+    pub fn get_order_book_depth(
+        &self,
+        symbol: &str,
+        levels: usize,
+    ) -> Option<(Vec<(Price, Quantity)>, Vec<(Price, Quantity)>)> {
         self.orderbooks.get(symbol).map(|ob| ob.get_depth(levels))
     }
 
     /// Cancel an order by ID
-    pub async fn cancel_order(&self, user_id: u64, symbol: &str, order_id: u64) -> Result<Order, EngineError> {
-        let mut orderbook = self.orderbooks.get_mut(symbol)
+    pub async fn cancel_order(
+        &self,
+        user_id: u64,
+        symbol: &str,
+        order_id: u64,
+    ) -> Result<Order, EngineError> {
+        let mut orderbook = self
+            .orderbooks
+            .get_mut(symbol)
             .ok_or(EngineError::SymbolNotFound)?;
-        
-        let cancelled_order = orderbook.cancel_order(order_id)
+
+        let cancelled_order = orderbook
+            .cancel_order(order_id)
             .ok_or(EngineError::OrderNotFound)?;
-        
+
         // Verify ownership
         if cancelled_order.user_id != user_id {
             // Re-insert the order since we can't cancel someone else's order
@@ -203,12 +260,15 @@ impl MatchingEngine {
 
     /// Release locked funds or shares when an order is cancelled
     async fn release_locks(&self, order: &Order) -> Result<(), EngineError> {
-        let mut user = self.user_repo.find_by_id(order.user_id).await
+        let mut user = self
+            .user_repo
+            .find_by_id(order.user_id)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
 
         let remaining_qty = order.qty - order.filled_qty;
-        
+
         match order.side {
             OrderSide::Buy => {
                 // Release locked money
@@ -224,13 +284,16 @@ impl MatchingEngine {
             }
             OrderSide::Short => {
                 // Release locked margin
-                let margin_amount = (order.price * remaining_qty as i64 * SHORT_MARGIN_PERCENT) / 100;
+                let margin_amount =
+                    (order.price * remaining_qty as i64 * SHORT_MARGIN_PERCENT) / 100;
                 user.money += margin_amount;
                 user.margin_locked = user.margin_locked.saturating_sub(margin_amount);
             }
         }
 
-        self.user_repo.save(user).await
+        self.user_repo
+            .save(user)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
 
         Ok(())
@@ -249,22 +312,28 @@ impl MatchingEngine {
         }
 
         // Fetch user
-        let mut user = self.user_repo.find_by_id(order.user_id).await
+        let mut user = self
+            .user_repo
+            .find_by_id(order.user_id)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
 
         // For market orders, get the current best price for validation/locking
         // We'll use a reasonable estimate, then the actual matching will happen at market price
         let market_order_price = if order.order_type == OrderType::Market {
-            let orderbook = self.orderbooks.get(&order.symbol)
+            let orderbook = self
+                .orderbooks
+                .get(&order.symbol)
                 .ok_or(EngineError::SymbolNotFound)?;
 
             match order.side {
                 OrderSide::Buy => {
                     // For market buy, use best ask + 10% buffer to ensure we can cover price movement
-                    orderbook.best_ask()
-                        .map(|p| (p * 110) / 100)  // 10% buffer
-                        .unwrap_or(100 * PRICE_SCALE)  // Default if no asks
+                    orderbook
+                        .best_ask()
+                        .map(|p| (p * 110) / 100) // 10% buffer
+                        .unwrap_or(100 * PRICE_SCALE) // Default if no asks
                 }
                 OrderSide::Sell | OrderSide::Short => {
                     // For market sell/short, use best bid - doesn't affect fund locking
@@ -278,8 +347,8 @@ impl MatchingEngine {
         // Adjust price for market orders (for matching, use extreme price to ensure matching)
         if order.order_type == OrderType::Market {
             order.price = match order.side {
-                OrderSide::Buy => i64::MAX / 2,  // Very high price to match any ask
-                OrderSide::Sell | OrderSide::Short => 1,  // Very low price to match any bid
+                OrderSide::Buy => i64::MAX / 2, // Very high price to match any ask
+                OrderSide::Sell | OrderSide::Short => 1, // Very low price to match any bid
             };
         }
 
@@ -297,7 +366,9 @@ impl MatchingEngine {
         }
 
         // Save user with locked funds/shares
-        self.user_repo.save(user.clone()).await
+        self.user_repo
+            .save(user.clone())
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
 
         // Process in order book
@@ -306,7 +377,9 @@ impl MatchingEngine {
         // For settlement: use lock_price (what we actually locked) for price improvement calc
         let locked_price = market_order_price;
 
-        let mut orderbook = self.orderbooks.get_mut(&order.symbol)
+        let mut orderbook = self
+            .orderbooks
+            .get_mut(&order.symbol)
             .ok_or(EngineError::SymbolNotFound)?;
 
         let (mut processed_order, trades) = orderbook.add_order(order, time_in_force);
@@ -347,7 +420,9 @@ impl MatchingEngine {
         }
 
         // Track order in OrdersService if it's still active (resting in book)
-        if processed_order.status == OrderStatus::Open || processed_order.status == OrderStatus::Partial {
+        if processed_order.status == OrderStatus::Open
+            || processed_order.status == OrderStatus::Partial
+        {
             self.orders_service.add_order(processed_order.clone());
         }
 
@@ -356,7 +431,12 @@ impl MatchingEngine {
 
     /// Validate and lock funds for buy orders
     /// lock_price is the price to use for fund locking (different from order.price for market orders)
-    fn validate_and_lock_buy(&self, user: &mut User, order: &Order, lock_price: Price) -> Result<(), EngineError> {
+    fn validate_and_lock_buy(
+        &self,
+        user: &mut User,
+        order: &Order,
+        lock_price: Price,
+    ) -> Result<(), EngineError> {
         let required_amount = lock_price * order.qty as i64;
 
         if user.money < required_amount {
@@ -371,7 +451,10 @@ impl MatchingEngine {
 
         tracing::debug!(
             "Locked {} for buy order {} by user {} (lock_price: {})",
-            required_amount, order.id, order.user_id, lock_price
+            required_amount,
+            order.id,
+            order.user_id,
+            lock_price
         );
 
         Ok(())
@@ -380,13 +463,12 @@ impl MatchingEngine {
     /// Validate and lock shares for sell orders
     fn validate_and_lock_sell(&self, user: &mut User, order: &Order) -> Result<(), EngineError> {
         // Find portfolio position
-        let position = user.portfolio.iter_mut()
-            .find(|p| p.symbol == order.symbol);
+        let position = user.portfolio.iter_mut().find(|p| p.symbol == order.symbol);
 
         match position {
             Some(pos) => {
                 let available = pos.qty.saturating_sub(pos.locked_qty);
-                
+
                 if available < order.qty {
                     return Err(EngineError::InsufficientShares {
                         required: order.qty,
@@ -395,12 +477,15 @@ impl MatchingEngine {
                 }
 
                 pos.locked_qty += order.qty;
-                
+
                 tracing::debug!(
                     "Locked {} shares of {} for sell order {} by user {}",
-                    order.qty, order.symbol, order.id, order.user_id
+                    order.qty,
+                    order.symbol,
+                    order.id,
+                    order.user_id
                 );
-                
+
                 Ok(())
             }
             None => Err(EngineError::InsufficientShares {
@@ -412,7 +497,12 @@ impl MatchingEngine {
 
     /// Validate and lock margin for short orders
     /// lock_price is the price to use for margin calculation (different from order.price for market orders)
-    fn validate_and_lock_short(&self, user: &mut User, order: &Order, lock_price: Price) -> Result<(), EngineError> {
+    fn validate_and_lock_short(
+        &self,
+        user: &mut User,
+        order: &Order,
+        lock_price: Price,
+    ) -> Result<(), EngineError> {
         // Short selling requires 150% margin
         let order_value = lock_price * order.qty as i64;
         let required_margin = (order_value * SHORT_MARGIN_PERCENT) / 100;
@@ -429,14 +519,22 @@ impl MatchingEngine {
 
         tracing::debug!(
             "Locked {} margin for short order {} by user {} (lock_price: {})",
-            required_margin, order.id, order.user_id, lock_price
+            required_margin,
+            order.id,
+            order.user_id,
+            lock_price
         );
 
         Ok(())
     }
 
     /// Settle a trade between buyer and seller
-    async fn settle_trade(&self, trade: &Trade, taker_side: OrderSide, taker_limit_price: Price) -> Result<(), EngineError> {
+    async fn settle_trade(
+        &self,
+        trade: &Trade,
+        taker_side: OrderSide,
+        taker_limit_price: Price,
+    ) -> Result<(), EngineError> {
         // Identify buyer and seller
         let (buyer_id, seller_id, is_taker_buyer) = if taker_side == OrderSide::Buy {
             (trade.taker_user_id, trade.maker_user_id, true)
@@ -447,11 +545,17 @@ impl MatchingEngine {
         let is_short_sale = taker_side == OrderSide::Short;
 
         // Fetch both users
-        let mut buyer = self.user_repo.find_by_id(buyer_id).await
+        let mut buyer = self
+            .user_repo
+            .find_by_id(buyer_id)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
 
-        let mut seller = self.user_repo.find_by_id(seller_id).await
+        let mut seller = self
+            .user_repo
+            .find_by_id(seller_id)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?
             .ok_or(EngineError::UserNotFound)?;
 
@@ -468,7 +572,7 @@ impl MatchingEngine {
             let locked_per_share = taker_limit_price;
             let locked_amount = locked_per_share * trade.qty as i64;
             let price_improvement = locked_amount - trade_cost;
-            
+
             // Release the locked amount, refund price improvement
             buyer.locked_money = buyer.locked_money.saturating_sub(locked_amount);
             buyer.money += price_improvement; // Refund if we bought cheaper
@@ -478,7 +582,11 @@ impl MatchingEngine {
         }
 
         // Add shares to buyer's portfolio
-        if let Some(pos) = buyer.portfolio.iter_mut().find(|p| p.symbol == trade.symbol) {
+        if let Some(pos) = buyer
+            .portfolio
+            .iter_mut()
+            .find(|p| p.symbol == trade.symbol)
+        {
             let old_cost = pos.average_buy_price * pos.qty as i64;
             let new_qty = pos.qty + trade.qty;
             pos.qty = new_qty;
@@ -501,12 +609,16 @@ impl MatchingEngine {
             // Short sale: Add to short position, release margin proportionally
             let margin_per_share = (taker_limit_price * SHORT_MARGIN_PERCENT) / 100;
             let margin_released = margin_per_share * trade.qty as i64;
-            
+
             seller.margin_locked = seller.margin_locked.saturating_sub(margin_released);
             seller.money += trade_cost; // Receive sale proceeds
-            
+
             // Track short position
-            if let Some(pos) = seller.portfolio.iter_mut().find(|p| p.symbol == trade.symbol) {
+            if let Some(pos) = seller
+                .portfolio
+                .iter_mut()
+                .find(|p| p.symbol == trade.symbol)
+            {
                 pos.short_qty += trade.qty;
             } else {
                 seller.portfolio.push(Portfolio {
@@ -521,22 +633,34 @@ impl MatchingEngine {
         } else {
             // Regular sell: Remove from portfolio, credit money
             seller.money += trade_cost;
-            
-            if let Some(pos) = seller.portfolio.iter_mut().find(|p| p.symbol == trade.symbol) {
+
+            if let Some(pos) = seller
+                .portfolio
+                .iter_mut()
+                .find(|p| p.symbol == trade.symbol)
+            {
                 pos.locked_qty = pos.locked_qty.saturating_sub(trade.qty);
                 pos.qty = pos.qty.saturating_sub(trade.qty);
             }
         }
 
         // Save both users
-        self.user_repo.save(buyer).await
+        self.user_repo
+            .save(buyer)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
-        self.user_repo.save(seller).await
+        self.user_repo
+            .save(seller)
+            .await
             .map_err(|e| EngineError::InternalError(e.to_string()))?;
 
         // Record trade in history
         let buyer_side = OrderSide::Buy;
-        let seller_side = if is_short_sale { OrderSide::Short } else { OrderSide::Sell };
+        let seller_side = if is_short_sale {
+            OrderSide::Short
+        } else {
+            OrderSide::Sell
+        };
         self.trade_history.record_trade(
             trade.clone(),
             buyer_name,
@@ -547,7 +671,12 @@ impl MatchingEngine {
 
         tracing::info!(
             "Settled trade {}: {} {} @ {} between buyer {} and seller {}",
-            trade.id, trade.qty, trade.symbol, trade.price, buyer_id, seller_id
+            trade.id,
+            trade.qty,
+            trade.symbol,
+            trade.price,
+            buyer_id,
+            seller_id
         );
 
         Ok(())

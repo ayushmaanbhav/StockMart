@@ -3,13 +3,13 @@
 //! Generates simulated market news for the trading game.
 //! Uses actual company symbols from the repository.
 
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::RwLock;
-use std::collections::VecDeque;
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
-use rand::Rng;
-use serde::{Serialize, Deserialize};
 
 use crate::domain::CompanyRepository;
 
@@ -257,7 +257,7 @@ mod tests {
 
         let recent = svc.get_recent(100);
         assert_eq!(recent.len(), 50); // Capped at 50
-        // Oldest should be news_5 (0-4 were dropped)
+                                      // Oldest should be news_5 (0-4 were dropped)
         assert_eq!(recent.last().unwrap().id, "news_5");
     }
 

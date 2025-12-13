@@ -69,10 +69,11 @@ export const AdminDashboardPage: React.FC = () => {
         trades,
         news
     } = useGameStore();
-    const { metrics, metricsLoading: _metricsLoading, fetchMetrics } = useAdminStore();
+    const { metrics, fetchMetrics } = useAdminStore();
     const formatCurrency = useConfigStore(state => state.formatCurrency);
 
     const [isTogglingMarket, setIsTogglingMarket] = React.useState(false);
+    const [currentTime, setCurrentTime] = React.useState(() => Date.now());
 
     // Fetch metrics on mount and periodically
     React.useEffect(() => {
@@ -80,6 +81,12 @@ export const AdminDashboardPage: React.FC = () => {
         const interval = setInterval(fetchMetrics, POLLING.DASHBOARD_METRICS_INTERVAL);
         return () => clearInterval(interval);
     }, [fetchMetrics]);
+
+    // Update current time periodically for halted symbols calculation
+    React.useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleToggleMarket = () => {
         setIsTogglingMarket(true);
@@ -101,7 +108,7 @@ export const AdminDashboardPage: React.FC = () => {
     const totalVolume = metrics?.total_volume ?? 0;
     const recentVolume = metrics?.recent_volume ?? 0;
     const haltedCount = metrics?.halted_symbols_count ?? Object.keys(haltedSymbols).filter(
-        s => haltedSymbols[s] > Date.now()
+        s => haltedSymbols[s] > currentTime
     ).length;
     const totalCompanies = companies.length;
     const totalOpenOrders = metrics?.open_orders_count ?? 0;

@@ -27,7 +27,8 @@ async fn test_concurrent_orders_multiple_users() {
             &format!("User {}", i),
             dollars(100_000),
             vec![("AAPL".to_string(), 100)],
-        ).await;
+        )
+        .await;
         users.push(user_id);
     }
 
@@ -35,22 +36,27 @@ async fn test_concurrent_orders_multiple_users() {
 
     // All users place orders concurrently
     let state_clone = state.clone();
-    let handles: Vec<JoinHandle<Result<u64, String>>> = users.iter().enumerate().map(|(i, &user_id)| {
-        let state = state_clone.clone();
-        let sym = symbol.clone();
-        tokio::spawn(async move {
-            if i % 2 == 0 {
-                place_limit_buy(&state, user_id, &sym, 10, dollars(100)).await
-            } else {
-                place_limit_sell(&state, user_id, &sym, 10, dollars(100)).await
-            }
+    let handles: Vec<JoinHandle<Result<u64, String>>> = users
+        .iter()
+        .enumerate()
+        .map(|(i, &user_id)| {
+            let state = state_clone.clone();
+            let sym = symbol.clone();
+            tokio::spawn(async move {
+                if i % 2 == 0 {
+                    place_limit_buy(&state, user_id, &sym, 10, dollars(100)).await
+                } else {
+                    place_limit_sell(&state, user_id, &sym, 10, dollars(100)).await
+                }
+            })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
     // All orders should succeed
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter_map(|r| r.as_ref().ok())
         .collect();
@@ -73,35 +79,43 @@ async fn test_concurrent_orders_same_user() {
         &state,
         "CONCURRENT_USER",
         "Concurrent User",
-        dollars(1_000_000), // Lots of money
+        dollars(1_000_000),               // Lots of money
         vec![("AAPL".to_string(), 1000)], // Lots of shares
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // User places 20 orders concurrently
     let state_clone = state.clone();
-    let handles: Vec<JoinHandle<Result<u64, String>>> = (0..20).map(|i| {
-        let state = state_clone.clone();
-        let sym = symbol.clone();
-        tokio::spawn(async move {
-            if i % 2 == 0 {
-                place_limit_buy(&state, user_id, &sym, 5, dollars(90 + i as i64)).await
-            } else {
-                place_limit_sell(&state, user_id, &sym, 5, dollars(110 + i as i64)).await
-            }
+    let handles: Vec<JoinHandle<Result<u64, String>>> = (0..20)
+        .map(|i| {
+            let state = state_clone.clone();
+            let sym = symbol.clone();
+            tokio::spawn(async move {
+                if i % 2 == 0 {
+                    place_limit_buy(&state, user_id, &sym, 5, dollars(90 + i as i64)).await
+                } else {
+                    place_limit_sell(&state, user_id, &sym, 5, dollars(110 + i as i64)).await
+                }
+            })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter_map(|r| r.as_ref().ok())
         .collect();
 
     // Most orders should succeed (some might fail due to fund/share locking race)
-    assert!(successes.len() >= 10, "Most concurrent orders should succeed, got {}", successes.len());
+    assert!(
+        successes.len() >= 10,
+        "Most concurrent orders should succeed, got {}",
+        successes.len()
+    );
 
     // Verify user state is consistent
     check_money_invariant(&state, user_id).await.unwrap();
@@ -115,36 +129,41 @@ async fn test_order_cancel_race() {
 
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
-    let user_id = create_test_user_with_portfolio(
-        &state,
-        "RACE_USER",
-        "Race User",
-        dollars(100_000),
-        vec![],
-    ).await;
+    let user_id =
+        create_test_user_with_portfolio(&state, "RACE_USER", "Race User", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
     // Place an order
-    let order_id = place_limit_buy(&state, user_id, &symbol, 50, dollars(90)).await.unwrap();
+    let order_id = place_limit_buy(&state, user_id, &symbol, 50, dollars(90))
+        .await
+        .unwrap();
 
-    let initial_locked = state.user_repo.find_by_id(user_id).await.unwrap().unwrap().locked_money;
+    let initial_locked = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
+        .unwrap()
+        .unwrap()
+        .locked_money;
 
     // Try to cancel the same order multiple times concurrently
     let state_clone = state.clone();
     let sym = symbol.clone();
-    let handles: Vec<JoinHandle<_>> = (0..5).map(|_| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            state.engine.cancel_order(user_id, &sym, order_id).await
+    let handles: Vec<JoinHandle<_>> = (0..5)
+        .map(|_| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(async move { state.engine.cancel_order(user_id, &sym, order_id).await })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
     // Exactly one cancel should succeed, others should fail (order already cancelled)
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter(|r| r.is_ok())
         .collect();
@@ -157,8 +176,10 @@ async fn test_order_cancel_race() {
 
     // Locked money should be back to 0 or still locked (but consistent)
     let final_user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
-    assert!(final_user.locked_money == 0 || final_user.locked_money == initial_locked,
-        "Locked money should be in consistent state");
+    assert!(
+        final_user.locked_money == 0 || final_user.locked_money == initial_locked,
+        "Locked money should be in consistent state"
+    );
 }
 
 /// CONC-ORDER-004: Matching during high load
@@ -179,7 +200,8 @@ async fn test_matching_high_load() {
             &format!("Buyer {}", i),
             dollars(100_000),
             vec![],
-        ).await;
+        )
+        .await;
         buyers.push(buyer);
 
         let seller = create_test_user_with_portfolio(
@@ -188,7 +210,8 @@ async fn test_matching_high_load() {
             &format!("Seller {}", i),
             dollars(10_000),
             vec![("AAPL".to_string(), 100)],
-        ).await;
+        )
+        .await;
         sellers.push(seller);
     }
 
@@ -200,21 +223,27 @@ async fn test_matching_high_load() {
     let state_clone = state.clone();
     let sym = symbol.clone();
 
-    let buyer_handles: Vec<_> = buyers.iter().map(|&user_id| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            place_limit_buy(&state, user_id, &sym, 10, dollars(100)).await
+    let buyer_handles: Vec<_> = buyers
+        .iter()
+        .map(|&user_id| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(
+                async move { place_limit_buy(&state, user_id, &sym, 10, dollars(100)).await },
+            )
         })
-    }).collect();
+        .collect();
 
-    let seller_handles: Vec<_> = sellers.iter().map(|&user_id| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            place_limit_sell(&state, user_id, &sym, 10, dollars(100)).await
+    let seller_handles: Vec<_> = sellers
+        .iter()
+        .map(|&user_id| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(
+                async move { place_limit_sell(&state, user_id, &sym, 10, dollars(100)).await },
+            )
         })
-    }).collect();
+        .collect();
 
     // Wait for all orders
     let buyer_results: Vec<_> = futures::future::join_all(buyer_handles).await;
@@ -249,17 +278,26 @@ async fn test_concurrent_registrations() {
 
     // Try to register 10 users concurrently
     let state_clone = state.clone();
-    let handles: Vec<JoinHandle<u64>> = (0..10).map(|i| {
-        let state = state_clone.clone();
-        tokio::spawn(async move {
-            create_test_user(&state, &format!("CONCREG{}", i), &format!("User {}", i), "pass").await
+    let handles: Vec<JoinHandle<u64>> = (0..10)
+        .map(|i| {
+            let state = state_clone.clone();
+            tokio::spawn(async move {
+                create_test_user(
+                    &state,
+                    &format!("CONCREG{}", i),
+                    &format!("User {}", i),
+                    "pass",
+                )
+                .await
+            })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
     // All should succeed
-    let user_ids: Vec<_> = results.iter()
+    let user_ids: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .copied()
         .collect();
@@ -285,7 +323,8 @@ async fn test_concurrent_portfolio_updates() {
         "Mega Buyer",
         dollars(10_000_000), // $10M
         vec![],
-    ).await;
+    )
+    .await;
 
     // Create many sellers
     let mut sellers = Vec::new();
@@ -296,25 +335,31 @@ async fn test_concurrent_portfolio_updates() {
             &format!("Seller {}", i),
             dollars(10_000),
             vec![("AAPL".to_string(), 100)],
-        ).await;
+        )
+        .await;
         sellers.push(seller);
     }
 
     open_market(&state);
 
     // Buyer places a large bid
-    place_limit_buy(&state, buyer, &symbol, 500, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer, &symbol, 500, dollars(100))
+        .await
+        .unwrap();
 
     // All sellers hit the bid concurrently
     let state_clone = state.clone();
     let sym = symbol.clone();
-    let handles: Vec<_> = sellers.iter().map(|&seller_id| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            place_limit_sell(&state, seller_id, &sym, 50, dollars(100)).await
+    let handles: Vec<_> = sellers
+        .iter()
+        .map(|&seller_id| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(async move {
+                place_limit_sell(&state, seller_id, &sym, 50, dollars(100)).await
+            })
         })
-    }).collect();
+        .collect();
 
     let _results: Vec<_> = futures::future::join_all(handles).await;
 
@@ -325,7 +370,10 @@ async fn test_concurrent_portfolio_updates() {
     // Buyer should have received shares
     let buyer_user = state.user_repo.find_by_id(buyer).await.unwrap().unwrap();
     let position = buyer_user.portfolio.iter().find(|p| p.symbol == symbol);
-    assert!(position.is_some(), "Buyer should have position after trades");
+    assert!(
+        position.is_some(),
+        "Buyer should have position after trades"
+    );
 }
 
 /// CONC-USER-003: Multiple sessions same user
@@ -334,20 +382,22 @@ async fn test_concurrent_sessions_same_user() {
     let state = create_test_state_with_config(TestConfig {
         max_sessions_per_user: 2,
         ..Default::default()
-    }).await;
+    })
+    .await;
 
     let user_id = create_test_user(&state, "MULTI_SESSION", "Multi Session User", "pass").await;
 
     // Create multiple sessions concurrently
     let state_clone = state.clone();
-    let handles: Vec<_> = (0..5).map(|_| {
-        let state = state_clone.clone();
-        tokio::spawn(async move {
-            state.sessions.create_session(user_id)
+    let handles: Vec<_> = (0..5)
+        .map(|_| {
+            let state = state_clone.clone();
+            tokio::spawn(async move { state.sessions.create_session(user_id) })
         })
-    }).collect();
+        .collect();
 
-    let results: Vec<_> = futures::future::join_all(handles).await
+    let results: Vec<_> = futures::future::join_all(handles)
+        .await
         .into_iter()
         .map(|r| r.unwrap())
         .collect();
@@ -355,8 +405,10 @@ async fn test_concurrent_sessions_same_user() {
     // With max_sessions=2, should have exactly 2 active
     // (others would have kicked earlier ones)
     // Total active sessions should be <= 2
-    assert!(state.sessions.active_session_count() <= 2,
-        "Should have at most 2 active sessions");
+    assert!(
+        state.sessions.active_session_count() <= 2,
+        "Should have at most 2 active sessions"
+    );
 }
 
 // =============================================================================
@@ -377,56 +429,76 @@ async fn test_double_spend_prevention() {
         "Double Spend User",
         dollars(10_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     // Create sellers with liquidity
     let seller1 = create_test_user_with_portfolio(
-        &state, "SELLER1", "Seller 1", dollars(10_000),
+        &state,
+        "SELLER1",
+        "Seller 1",
+        dollars(10_000),
         vec![("AAPL".to_string(), 200)],
-    ).await;
+    )
+    .await;
     let seller2 = create_test_user_with_portfolio(
-        &state, "SELLER2", "Seller 2", dollars(10_000),
+        &state,
+        "SELLER2",
+        "Seller 2",
+        dollars(10_000),
         vec![("AAPL".to_string(), 200)],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
     // Sellers post liquidity
-    place_limit_sell(&state, seller1, &symbol, 100, dollars(100)).await.unwrap();
-    place_limit_sell(&state, seller2, &symbol, 100, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller1, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
+    place_limit_sell(&state, seller2, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
 
     // User tries to buy 200 shares ($20,000) with only $10,000
     // Try two $10,000 orders concurrently
     let state_clone = state.clone();
     let sym = symbol.clone();
-    let handles: Vec<_> = (0..2).map(|_| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            place_limit_buy(&state, user_id, &sym, 100, dollars(100)).await
+    let handles: Vec<_> = (0..2)
+        .map(|_| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(
+                async move { place_limit_buy(&state, user_id, &sym, 100, dollars(100)).await },
+            )
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter_map(|r| r.as_ref().ok())
         .collect();
 
     // Only one order should succeed (the other should fail insufficient funds)
-    assert_eq!(successes.len(), 1,
-        "Only one $10k order should succeed with $10k balance");
+    assert_eq!(
+        successes.len(),
+        1,
+        "Only one $10k order should succeed with $10k balance"
+    );
 
     // Verify user state is consistent
     check_money_invariant(&state, user_id).await.unwrap();
 
     // User should have at most $10,000 worth of activity
     let user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
-    let total_committed = user.locked_money +
-        (dollars(10_000) - user.money); // money spent
-    assert!(total_committed <= dollars(10_000),
-        "User should not have committed more than their balance");
+    let total_committed = user.locked_money + (dollars(10_000) - user.money); // money spent
+    assert!(
+        total_committed <= dollars(10_000),
+        "User should not have committed more than their balance"
+    );
 }
 
 /// CONF-002: Double-sell attack prevention
@@ -443,43 +515,54 @@ async fn test_double_sell_prevention() {
         "Double Sell User",
         dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
+    )
+    .await;
 
     // Create buyers
-    let buyer1 = create_test_user_with_portfolio(
-        &state, "BUYER1", "Buyer 1", dollars(100_000), vec![],
-    ).await;
-    let buyer2 = create_test_user_with_portfolio(
-        &state, "BUYER2", "Buyer 2", dollars(100_000), vec![],
-    ).await;
+    let buyer1 =
+        create_test_user_with_portfolio(&state, "BUYER1", "Buyer 1", dollars(100_000), vec![])
+            .await;
+    let buyer2 =
+        create_test_user_with_portfolio(&state, "BUYER2", "Buyer 2", dollars(100_000), vec![])
+            .await;
 
     open_market(&state);
 
     // Buyers post bids
-    place_limit_buy(&state, buyer1, &symbol, 100, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer2, &symbol, 100, dollars(100)).await.unwrap();
+    place_limit_buy(&state, buyer1, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer2, &symbol, 100, dollars(100))
+        .await
+        .unwrap();
 
     // User tries to sell 200 shares with only 100
     let state_clone = state.clone();
     let sym = symbol.clone();
-    let handles: Vec<_> = (0..2).map(|_| {
-        let state = state_clone.clone();
-        let sym = sym.clone();
-        tokio::spawn(async move {
-            place_limit_sell(&state, user_id, &sym, 100, dollars(100)).await
+    let handles: Vec<_> = (0..2)
+        .map(|_| {
+            let state = state_clone.clone();
+            let sym = sym.clone();
+            tokio::spawn(
+                async move { place_limit_sell(&state, user_id, &sym, 100, dollars(100)).await },
+            )
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter_map(|r| r.as_ref().ok())
         .collect();
 
     // Only one order should succeed
-    assert_eq!(successes.len(), 1,
-        "Only one 100-share sell should succeed with 100 shares");
+    assert_eq!(
+        successes.len(),
+        1,
+        "Only one 100-share sell should succeed with 100 shares"
+    );
 
     // Verify position invariant
     check_position_invariant(&state, user_id).await.unwrap();
@@ -494,22 +577,25 @@ async fn test_simultaneous_duplicate_registration() {
 
     // Try to register same regno concurrently
     let state_clone = state.clone();
-    let handles: Vec<_> = (0..5).map(|i| {
-        let state = state_clone.clone();
-        let regno = regno.to_string();
-        tokio::spawn(async move {
-            // First check if exists (simulating registration flow)
-            if !state.user_repo.regno_exists(&regno).await.unwrap_or(true) {
-                create_test_user(&state, &regno, &format!("User {}", i), "pass").await
-            } else {
-                0 // Failed - already exists
-            }
+    let handles: Vec<_> = (0..5)
+        .map(|i| {
+            let state = state_clone.clone();
+            let regno = regno.to_string();
+            tokio::spawn(async move {
+                // First check if exists (simulating registration flow)
+                if !state.user_repo.regno_exists(&regno).await.unwrap_or(true) {
+                    create_test_user(&state, &regno, &format!("User {}", i), "pass").await
+                } else {
+                    0 // Failed - already exists
+                }
+            })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
-    let successful_ids: Vec<_> = results.iter()
+    let successful_ids: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter(|&&id| id > 0)
         .collect();
@@ -519,8 +605,10 @@ async fn test_simultaneous_duplicate_registration() {
     // The important thing is the final state is consistent
     let exists = state.user_repo.regno_exists(regno).await.unwrap();
     // Either all failed, or exactly one succeeded
-    assert!(successful_ids.len() <= 1 || exists,
-        "At most one registration should succeed");
+    assert!(
+        successful_ids.len() <= 1 || exists,
+        "At most one registration should succeed"
+    );
 }
 
 // =============================================================================
@@ -540,14 +628,23 @@ async fn test_order_placement_atomic() {
         "Atomic User",
         dollars(100_000),
         vec![],
-    ).await;
+    )
+    .await;
 
     open_market(&state);
 
-    let initial_money = state.user_repo.find_by_id(user_id).await.unwrap().unwrap().money;
+    let initial_money = state
+        .user_repo
+        .find_by_id(user_id)
+        .await
+        .unwrap()
+        .unwrap()
+        .money;
 
     // Place order
-    let order_id = place_limit_buy(&state, user_id, &symbol, 50, dollars(100)).await.unwrap();
+    let order_id = place_limit_buy(&state, user_id, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Verify atomicity: if order exists, money must be locked
     let orders = state.orders.get_user_orders(user_id);
@@ -556,11 +653,16 @@ async fn test_order_placement_atomic() {
     let user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
 
     if order_exists {
-        assert!(user.locked_money > 0, "If order exists, money must be locked");
+        assert!(
+            user.locked_money > 0,
+            "If order exists, money must be locked"
+        );
     } else {
         // Order was filled immediately
-        assert!(user.money < initial_money || user.locked_money == 0,
-            "If order filled, either money spent or nothing locked");
+        assert!(
+            user.money < initial_money || user.locked_money == 0,
+            "If order filled, either money spent or nothing locked"
+        );
     }
 }
 
@@ -572,12 +674,15 @@ async fn test_trade_execution_atomic() {
     let symbol = create_test_company(&state, "AAPL", "Apple Inc.").await;
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     let initial_seller_money = dollars(10_000);
     let initial_buyer_money = dollars(100_000);
@@ -585,8 +690,12 @@ async fn test_trade_execution_atomic() {
     open_market(&state);
 
     // Execute a trade
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Verify both sides settled atomically
     let seller_user = state.user_repo.find_by_id(seller).await.unwrap().unwrap();
@@ -598,7 +707,9 @@ async fn test_trade_execution_atomic() {
     let seller_received = seller_user.money - initial_seller_money;
 
     // Buyer should have shares and spent money
-    let buyer_has_shares = buyer_user.portfolio.iter()
+    let buyer_has_shares = buyer_user
+        .portfolio
+        .iter()
         .find(|p| p.symbol == symbol)
         .map(|p| p.qty)
         .unwrap_or(0);
@@ -606,8 +717,14 @@ async fn test_trade_execution_atomic() {
 
     // If seller received money, buyer must have shares (atomicity)
     if seller_received > 0 {
-        assert!(buyer_has_shares > 0, "If seller received money, buyer must have shares");
-        assert_eq!(seller_received, buyer_spent, "Money transferred should match");
+        assert!(
+            buyer_has_shares > 0,
+            "If seller received money, buyer must have shares"
+        );
+        assert_eq!(
+            seller_received, buyer_spent,
+            "Money transferred should match"
+        );
     }
 }
 
@@ -626,17 +743,18 @@ async fn test_concurrent_reads() {
     let state_clone = state.clone();
 
     // Many concurrent reads
-    let handles: Vec<_> = (0..100).map(|_| {
-        let state = state_clone.clone();
-        tokio::spawn(async move {
-            state.user_repo.find_by_id(user_id).await
+    let handles: Vec<_> = (0..100)
+        .map(|_| {
+            let state = state_clone.clone();
+            tokio::spawn(async move { state.user_repo.find_by_id(user_id).await })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
     // All reads should succeed
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter_map(|r| r.as_ref().ok())
         .filter_map(|r| r.as_ref().ok())
         .collect();
@@ -650,24 +768,28 @@ async fn test_concurrent_writes() {
     let state = create_test_state().await;
 
     // Create a user
-    let user_id = create_test_user(&state, "CONCURRENT_WRITE", "Concurrent Write User", "pass").await;
+    let user_id =
+        create_test_user(&state, "CONCURRENT_WRITE", "Concurrent Write User", "pass").await;
 
     let state_clone = state.clone();
 
     // Many concurrent writes updating money
-    let handles: Vec<_> = (0..20).map(|i| {
-        let state = state_clone.clone();
-        tokio::spawn(async move {
-            let mut user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
-            user.money = dollars(i as i64 * 1000);
-            state.user_repo.save(user).await
+    let handles: Vec<_> = (0..20)
+        .map(|i| {
+            let state = state_clone.clone();
+            tokio::spawn(async move {
+                let mut user = state.user_repo.find_by_id(user_id).await.unwrap().unwrap();
+                user.money = dollars(i as i64 * 1000);
+                state.user_repo.save(user).await
+            })
         })
-    }).collect();
+        .collect();
 
     let results: Vec<_> = futures::future::join_all(handles).await;
 
     // All writes should succeed (DashMap handles this)
-    let successes: Vec<_> = results.iter()
+    let successes: Vec<_> = results
+        .iter()
         .filter(|r| r.is_ok())
         .filter(|r| r.as_ref().unwrap().is_ok())
         .collect();
@@ -694,18 +816,25 @@ async fn test_broadcast_multiple_receivers() {
     let mut collectors: Vec<_> = (0..5).map(|_| TradeCollector::new(&state)).collect();
 
     let seller = create_test_user_with_portfolio(
-        &state, "SELLER", "Seller", dollars(10_000),
+        &state,
+        "SELLER",
+        "Seller",
+        dollars(10_000),
         vec![("AAPL".to_string(), 100)],
-    ).await;
-    let buyer = create_test_user_with_portfolio(
-        &state, "BUYER", "Buyer", dollars(100_000), vec![],
-    ).await;
+    )
+    .await;
+    let buyer =
+        create_test_user_with_portfolio(&state, "BUYER", "Buyer", dollars(100_000), vec![]).await;
 
     open_market(&state);
 
     // Execute a trade
-    place_limit_sell(&state, seller, &symbol, 50, dollars(100)).await.unwrap();
-    place_limit_buy(&state, buyer, &symbol, 50, dollars(100)).await.unwrap();
+    place_limit_sell(&state, seller, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
+    place_limit_buy(&state, buyer, &symbol, 50, dollars(100))
+        .await
+        .unwrap();
 
     // Give broadcasts time to propagate
     tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
@@ -713,8 +842,11 @@ async fn test_broadcast_multiple_receivers() {
     // All collectors should receive the trade
     for (i, collector) in collectors.iter_mut().enumerate() {
         collector.collect();
-        assert!(collector.count() >= 1,
+        assert!(
+            collector.count() >= 1,
             "Collector {} should have received at least 1 trade, got {}",
-            i, collector.count());
+            i,
+            collector.count()
+        );
     }
 }

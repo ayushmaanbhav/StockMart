@@ -3,7 +3,7 @@
 // Logs all game state changes and transactions to JSON
 // ============================================
 
-#![allow(dead_code)]  // Logger API includes methods for various event types
+#![allow(dead_code)] // Logger API includes methods for various event types
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tracing::{info, error};
+use tracing::{error, info};
 
 /// Types of events that can be logged
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,10 +184,7 @@ impl EventLogger {
     }
 
     fn open_log_file(path: &PathBuf) -> std::io::Result<BufWriter<File>> {
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)?;
+        let file = OpenOptions::new().create(true).append(true).open(path)?;
         Ok(BufWriter::new(file))
     }
 
@@ -244,10 +241,7 @@ impl EventLogger {
         // Rename old file with timestamp
         if self.log_path.exists() {
             let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
-            let backup_name = format!(
-                "game_events_{}.jsonl",
-                timestamp
-            );
+            let backup_name = format!("game_events_{}.jsonl", timestamp);
             let backup_path = self.log_path.parent().unwrap().join(backup_name);
             std::fs::rename(&self.log_path, backup_path)?;
         }
