@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 # StockMart
@@ -342,8 +344,8 @@ StockMart is built for performance with Rust and async architecture.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/stockmart.git
-cd stockmart
+git clone https://github.com/ayushmaanbhav/StockMart.git
+cd StockMart
 
 # Start the backend (Terminal 1)
 cd backend
@@ -788,6 +790,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 **Built with love for educators, students, and trading enthusiasts**
 
-[Report Bug](https://github.com/yourusername/stockmart/issues) · [Request Feature](https://github.com/yourusername/stockmart/issues) · [Documentation](./docs/)
+[Report Bug](https://github.com/ayushmaanbhav/StockMart/issues) · [Request Feature](https://github.com/ayushmaanbhav/StockMart/issues) · [Documentation](./docs/)
 
 </div>
